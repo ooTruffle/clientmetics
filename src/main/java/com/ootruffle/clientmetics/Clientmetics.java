@@ -37,6 +37,7 @@ public final class Clientmetics implements ModInitializer {
 
     @Override
     public void init() {
+        com.ootruffle.clientmetics.platform.Game.set(new com.ootruffle.clientmetics.platform.LegacyGame());
         Config.load();
         OneConfigCompat.init();
         ClientTagCompat.init();

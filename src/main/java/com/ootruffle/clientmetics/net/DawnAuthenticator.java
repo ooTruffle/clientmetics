@@ -10,7 +10,6 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
-import net.minecraft.client.Minecraft;
 
 /** Gets a Dawn JWT using the game's existing Microsoft session and Mojang's server-join proof. */
 public final class DawnAuthenticator {
@@ -19,8 +18,7 @@ public final class DawnAuthenticator {
     private DawnAuthenticator() { }
 
     public static String fetchToken() throws Exception {
-        Minecraft mc = Minecraft.getMinecraft();
-        String name = mc.getSession().getUsername();
+        String name = com.ootruffle.clientmetics.platform.Game.get().sessionName();
         String serverId = get("/minecraft/server-id").get("token").getAsString();
         SessionJoins.join(serverId);
         String path = "/minecraft/has-joined/" + URLEncoder.encode(name, "UTF-8").replace("+", "%20")

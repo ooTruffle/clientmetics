@@ -8,7 +8,6 @@ import com.ootruffle.clientmetics.net.DawnSocket;
 import com.ootruffle.clientmetics.render.CosmeticRenderer;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -18,8 +17,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicReference;
-import net.minecraft.client.Minecraft;
-import net.minecraft.entity.player.EntityPlayer;
+import com.ootruffle.clientmetics.platform.Game;
 
 /**
  * Tracks nearby players on Dawn's gateway ({@code players.tracked}) and stores the slot-to-slug
@@ -87,10 +85,11 @@ public final class DawnCosmeticManager {
     }
 
     public static void onClientTick() {
-        final Minecraft mc = Minecraft.getMinecraft();
+        final Game game = Game.get();
         final Config config = Config.get();
-        final boolean multiplayer = mc.theWorld != null && !mc.isSingleplayer();
-        final boolean active = config.enabled && config.termsNoticeSeen && config.dawnOn() && DawnCatalog.get() != null && mc.theWorld != null
+        final boolean inWorld = game.inWorld();
+        final boolean multiplayer = inWorld && !game.singleplayer();
+        final boolean active = config.enabled && config.termsNoticeSeen && config.dawnOn() && DawnCatalog.get() != null && inWorld
                 && (multiplayer || config.showOwn);
         if (active != wasActive) {
             wasActive = active;
@@ -100,22 +99,19 @@ public final class DawnCosmeticManager {
                 WORKER.execute(DawnCosmeticManager::disconnect);
             }
         }
-        if (!active || ++ticks < SYNC_INTERVAL_TICKS || mc.thePlayer == null) {
+        if (!active || ++ticks < SYNC_INTERVAL_TICKS) {
             return;
         }
         ticks = 0;
 
-        final EntityPlayer self = mc.thePlayer;
-        final List<EntityPlayer> players = new ArrayList<>(mc.theWorld.playerEntities);
-        players.sort(Comparator.comparingDouble(p -> p.getDistanceSqToEntity(self)));
         final Set<UUID> visible = new LinkedHashSet<>();
-        for (EntityPlayer player : players) {
+        for (Game.Player player : game.playersByDistance()) {
             if (visible.size() >= Math.max(1, config.maxPlayers)) {
                 break;
             }
-            final UUID uuid = player.getUniqueID();
+            final UUID uuid = player.uuid;
             // Real accounts have v4 UUIDs; server NPCs can't have a Dawn account.
-            if (uuid == null || uuid.version() != 4 || (player == self && !config.showOwn)) {
+            if (uuid == null || uuid.version() != 4 || (player.self && !config.showOwn)) {
                 continue;
             }
             visible.add(uuid);
@@ -197,9 +193,9 @@ public final class DawnCosmeticManager {
         if (now < nextConnectAttempt) {
             return false;
         }
-        final Minecraft mc = Minecraft.getMinecraft();
-        if (mc.getSession().getProfile().getId() == null || mc.getSession().getToken() == null
-                || mc.getSession().getToken().length() < 32) {
+        final Game game = Game.get();
+        final String sessionToken = game.sessionToken();
+        if (game.sessionId() == null || sessionToken == null || sessionToken.length() < 32) {
             // Offline or dev accounts can't pass Mojang's session check, so don't keep trying.
             if (!warnedOffline) {
                 warnedOffline = true;

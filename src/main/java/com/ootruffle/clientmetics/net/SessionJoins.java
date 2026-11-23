@@ -1,7 +1,6 @@
 package com.ootruffle.clientmetics.net;
 
 import com.ootruffle.clientmetics.compat.ClientTagCompat;
-import net.minecraft.client.Minecraft;
 
 /**
  * The Mojang session join Lunar's authenticator checks, made from the game's own logged-in
@@ -24,8 +23,7 @@ public final class SessionJoins {
             Thread.sleep(wait);
         }
         try {
-            final Minecraft mc = Minecraft.getMinecraft();
-            mc.getSessionService().joinServer(mc.getSession().getProfile(), mc.getSession().getToken(), serverId);
+            com.ootruffle.clientmetics.platform.Game.get().joinServer(serverId);
         } finally {
             lastJoinAt = System.currentTimeMillis();
         }

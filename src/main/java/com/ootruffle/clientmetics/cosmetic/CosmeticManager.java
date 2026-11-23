@@ -10,7 +10,6 @@ import com.ootruffle.clientmetics.net.SessionJoins;
 import com.ootruffle.clientmetics.render.CosmeticRenderer;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -21,8 +20,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicReference;
-import net.minecraft.client.Minecraft;
-import net.minecraft.entity.player.EntityPlayer;
+import com.ootruffle.clientmetics.platform.Game;
 
 /**
  * Keeps track of who is in render range, subscribes to them on Lunar's websocket, and stores the
@@ -87,7 +85,7 @@ public final class CosmeticManager {
     }
 
     private static void rememberOwn(UUID uuid, List<EquippedCosmetic> outfit) {
-        if (uuid != null && uuid.equals(Minecraft.getMinecraft().getSession().getProfile().getId())) {
+        if (uuid != null && uuid.equals(Game.get().sessionId())) {
             ownOutfit = outfit;
             ownUuid = uuid;
         }
@@ -117,10 +115,11 @@ public final class CosmeticManager {
     }
 
     public static void onClientTick() {
-        final Minecraft mc = Minecraft.getMinecraft();
+        final Game game = Game.get();
         final Config config = Config.get();
-        final boolean multiplayer = mc.theWorld != null && !mc.isSingleplayer();
-        final boolean active = config.enabled && config.lunarOn() && config.termsNoticeSeen && Catalog.get() != null && mc.theWorld != null
+        final boolean inWorld = game.inWorld();
+        final boolean multiplayer = inWorld && !game.singleplayer();
+        final boolean active = config.enabled && config.lunarOn() && config.termsNoticeSeen && Catalog.get() != null && inWorld
                 && (multiplayer || config.showOwn);
 
         // A world change alone (swapping lobbies) resets nothing: the next sync drops whoever is
@@ -132,21 +131,18 @@ public final class CosmeticManager {
             OUTFITS.clear();
             WORKER.execute(active ? CosmeticManager::resetSubscriptions : CosmeticManager::disconnect);
         }
-        if (!active || ++ticks < SYNC_INTERVAL_TICKS || mc.thePlayer == null) {
+        if (!active || ++ticks < SYNC_INTERVAL_TICKS) {
             return;
         }
         ticks = 0;
 
-        final EntityPlayer self = mc.thePlayer;
-        final List<EntityPlayer> players = new ArrayList<>(mc.theWorld.playerEntities);
-        players.sort(Comparator.comparingDouble(p -> p.getDistanceSqToEntity(self)));
         final Set<UUID> visible = new LinkedHashSet<>();
-        for (EntityPlayer player : players) {
+        for (Game.Player player : game.playersByDistance()) {
             if (visible.size() >= Math.max(1, config.maxPlayers)) {
                 break;
             }
-            final UUID uuid = player.getUniqueID();
-            final boolean isSelf = player == self;
+            final UUID uuid = player.uuid;
+            final boolean isSelf = player.self;
             // Real accounts have v4 UUIDs; server NPCs (v2 on Hypixel) can't be on Lunar.
             if (uuid == null || uuid.version() != 4 || (isSelf && !config.showOwn)) {
                 continue;
@@ -272,10 +268,11 @@ public final class CosmeticManager {
         if (now < nextConnectAttempt) {
             return false;
         }
-        final Minecraft mc = Minecraft.getMinecraft();
-        final UUID uuid = mc.getSession().getProfile().getId();
-        final String name = mc.getSession().getUsername();
-        if (uuid == null || mc.getSession().getToken() == null || mc.getSession().getToken().length() < 32) {
+        final Game game = Game.get();
+        final UUID uuid = game.sessionId();
+        final String name = game.sessionName();
+        final String token = game.sessionToken();
+        if (uuid == null || token == null || token.length() < 32) {
             // Offline/cracked or dev accounts can't pass Mojang's session check, so don't keep trying.
             if (!warnedOffline) {
                 warnedOffline = true;

@@ -9,7 +9,6 @@ import com.ootruffle.clientmetics.asset.EssentialCatalog;
 import com.ootruffle.clientmetics.net.EssentialSocket;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -20,8 +19,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicReference;
-import net.minecraft.client.Minecraft;
-import net.minecraft.entity.player.EntityPlayer;
+import com.ootruffle.clientmetics.platform.Game;
 
 /**
  * Asks Essential's Connection Manager what nearby players are wearing, and keeps the answer.
@@ -104,13 +102,13 @@ public final class EssentialCosmeticManager {
     }
 
     public static void onClientTick() {
-        final Minecraft mc = Minecraft.getMinecraft();
+        final Game game = Game.get();
         final Config config = Config.get();
-        final boolean multiplayer = mc.theWorld != null && !mc.isSingleplayer();
+        final boolean multiplayer = game.inWorld() && !game.singleplayer();
         // The catalogue and your own outfit arrive over this socket, so it is kept up even in a menu
         // (the wardrobe can be opened from there); only player tracking needs a world.
         final boolean wanted = config.enabled && config.termsNoticeSeen && config.essentialOn();
-        final boolean inWorld = mc.theWorld != null && (multiplayer || config.showOwn);
+        final boolean inWorld = game.inWorld() && (multiplayer || config.showOwn);
         if (wanted != wasWanted) {
             wasWanted = wanted;
             ticks = 0;
@@ -142,20 +140,17 @@ public final class EssentialCosmeticManager {
             connectTicks = 0;
             WORKER.execute(EssentialCosmeticManager::connectNow);
         }
-        if (!inWorld || mc.thePlayer == null || ++ticks < SYNC_INTERVAL_TICKS) {
+        if (!inWorld || ++ticks < SYNC_INTERVAL_TICKS) {
             return;
         }
         ticks = 0;
 
-        final EntityPlayer self = mc.thePlayer;
-        final ArrayList<EntityPlayer> players = new ArrayList<>(mc.theWorld.playerEntities);
-        players.sort(Comparator.comparingDouble(p -> p.getDistanceSqToEntity(self)));
         final Set<UUID> visible = new LinkedHashSet<>();
-        for (EntityPlayer player : players) {
+        for (Game.Player player : game.playersByDistance()) {
             if (visible.size() >= Math.max(1, config.maxPlayers)) {
                 break;
             }
-            final UUID uuid = player.getUniqueID();
+            final UUID uuid = player.uuid;
             // Always fetch the local outfit for the Essential wardrobe. Rendering it on the player
             // remains controlled by showOwn in CosmeticRenderer.
             if (uuid == null || uuid.version() != 4) {
@@ -368,7 +363,7 @@ public final class EssentialCosmeticManager {
 
     /** This game's account, or null if it has none. */
     public static UUID selfId() {
-        return Minecraft.getMinecraft().getSession().getProfile().getId();
+        return Game.get().sessionId();
     }
 
     /** Asks Essential for this account's outfit again. Returns false when there's no connection. */
@@ -443,10 +438,11 @@ public final class EssentialCosmeticManager {
         if (now < nextConnectAttempt) {
             return false;
         }
-        final Minecraft mc = Minecraft.getMinecraft();
-        final UUID uuid = mc.getSession().getProfile().getId();
-        final String name = mc.getSession().getUsername();
-        if (uuid == null || mc.getSession().getToken() == null || mc.getSession().getToken().length() < 32) {
+        final Game game = Game.get();
+        final UUID uuid = game.sessionId();
+        final String name = game.sessionName();
+        final String token = game.sessionToken();
+        if (uuid == null || token == null || token.length() < 32) {
             if (!warnedOffline) {
                 warnedOffline = true;
                 Clientmetics.LOGGER.warn("Not connecting to Essential: this account isn't logged in to Microsoft (offline or dev session)");

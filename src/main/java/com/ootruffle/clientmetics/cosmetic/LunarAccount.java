@@ -12,7 +12,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
-import net.minecraft.client.Minecraft;
 
 /**
  * Your own Lunar account, for the wardrobe: which cosmetics you own and what your default outfit
@@ -105,7 +104,7 @@ public final class LunarAccount {
             }
             try {
                 state = parseLogin(res);
-                final UUID self = Minecraft.getMinecraft().getSession().getProfile().getId();
+                final UUID self = com.ootruffle.clientmetics.platform.Game.get().sessionId();
                 if (self != null) {
                     CosmeticManager.showOutfit(self, state.equipped); // So the preview shows it straight away.
                 }
@@ -211,7 +210,7 @@ public final class LunarAccount {
         final byte[] sent = outfit.toByteArray();
         if (demo) {
             state = new State(current.owned, sent, next);
-            final UUID self = Minecraft.getMinecraft().getSession().getProfile().getId();
+            final UUID self = com.ootruffle.clientmetics.platform.Game.get().sessionId();
             if (self != null) {
                 CosmeticManager.showOutfit(self, state.equipped);
             }
@@ -234,7 +233,7 @@ public final class LunarAccount {
             final State updated = new State(current.owned, saved, ProtoMessage.parse(saved).bytesList(3));
             state = updated;
             status = "Saved to your Lunar account.";
-            final UUID self = Minecraft.getMinecraft().getSession().getProfile().getId();
+            final UUID self = com.ootruffle.clientmetics.platform.Game.get().sessionId();
             if (self != null) {
                 CosmeticManager.showOutfit(self, updated.equipped);
             }

@@ -17,7 +17,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import net.minecraft.client.Minecraft;
 
 /**
  * Your own Dawn account, for the wardrobe: which cosmetics you own and what's in each slot.
@@ -180,8 +179,9 @@ public final class DawnAccount {
         if (DawnCatalog.get() == null) {
             return "Dawn's catalogue isn't loaded yet; try again in a moment.";
         }
-        final net.minecraft.util.Session session = Minecraft.getMinecraft().getSession();
-        if (session.getProfile().getId() == null || session.getToken() == null || session.getToken().length() < 32) {
+        final com.ootruffle.clientmetics.platform.Game game = com.ootruffle.clientmetics.platform.Game.get();
+        final String token = game.sessionToken();
+        if (game.sessionId() == null || token == null || token.length() < 32) {
             return "Dawn needs a Microsoft-signed-in account (this is an offline or dev session).";
         }
         return null;
@@ -209,7 +209,7 @@ public final class DawnAccount {
 
     /** Shows the saved outfit on your own player straight away (the gateway confirms it later). */
     private static void showSelf(State s) {
-        final UUID self = Minecraft.getMinecraft().getSession().getProfile().getId();
+        final UUID self = com.ootruffle.clientmetics.platform.Game.get().sessionId();
         if (self == null) {
             return;
         }
