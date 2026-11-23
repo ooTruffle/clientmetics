@@ -1,0 +1,8 @@
+.gradle/
+build/
+run/
+.idea/
+*.iml
+.kotlin/
+# Third-party mod jars for dev runs and compat compiling; copy them in by hand (see README).
+libs/devcompat/*.jar
