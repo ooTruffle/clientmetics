@@ -32,7 +32,7 @@ public final class Cloaks {
         if (!config.enabled || !config.showCloaks || uuid == null) {
             return null;
         }
-        if (catalog != null && config.lunar) {
+        if (catalog != null && config.lunarOn()) {
             for (EquippedCosmetic cosmetic : PreviewRenderer.outfitFor(uuid)) {
                 final Catalog.Entry entry = catalog.entry(cosmetic.id);
                 if (entry != null && "cloak".equals(entry.category)) {
@@ -40,7 +40,7 @@ public final class Cloaks {
                 }
             }
         }
-        final DawnCatalog dawnCatalog = config.dawn ? DawnCatalog.get() : null;
+        final DawnCatalog dawnCatalog = config.dawnOn() ? DawnCatalog.get() : null;
         final java.util.Collection<String> dawn = dawnCatalog == null ? null : PreviewRenderer.dawnOutfitFor(uuid);
         if (dawn != null) {
             for (String slug : dawn) {
@@ -76,7 +76,7 @@ public final class Cloaks {
      * and cape mods (WaveyCapes) draw it too.
      */
     private static String essentialCapeTexture(UUID uuid) {
-        if (!Config.get().essential) {
+        if (!Config.get().essentialOn()) {
             return null;
         }
         final EssentialSnapshot snapshot = PreviewRenderer.essentialOutfitFor(uuid);
@@ -98,7 +98,7 @@ public final class Cloaks {
      */
     public static boolean hidesVanillaCape(UUID uuid) {
         final Config config = Config.get();
-        if (!config.enabled || !config.showCloaks || !config.essential || uuid == null) {
+        if (!config.enabled || !config.showCloaks || !config.essentialOn() || uuid == null) {
             return false;
         }
         final EssentialCatalog.Entry entry = essentialCape(PreviewRenderer.essentialOutfitFor(uuid));

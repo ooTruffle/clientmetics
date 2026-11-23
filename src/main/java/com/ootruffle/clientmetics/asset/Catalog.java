@@ -140,7 +140,7 @@ public final class Catalog {
      * Lunar was turned back on before this ran.
      */
     public static synchronized void unload() {
-        if (instance != null && !Config.get().lunar) {
+        if (instance != null && !Config.get().lunarOn()) {
             instance = null;
             Clientmetics.LOGGER.info("Lunar cosmetics turned off; unloaded the Lunar catalogue");
         }

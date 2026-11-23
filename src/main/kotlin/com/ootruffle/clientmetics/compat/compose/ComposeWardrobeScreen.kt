@@ -85,6 +85,7 @@ import com.ootruffle.clientmetics.compat.OneConfigCompat
 import com.ootruffle.clientmetics.cosmetic.CosmeticOptions
 import com.ootruffle.clientmetics.cosmetic.LunarAccount
 import com.ootruffle.clientmetics.render.PreviewRenderer
+import com.ootruffle.clientmetics.compat.HostClients
 import com.ootruffle.clientmetics.render.WardrobeDev
 import com.ootruffle.clientmetics.render.WardrobeSource
 import kotlinx.coroutines.delay
@@ -423,6 +424,8 @@ class ComposeWardrobeScreen : ComposeScreen(ComposeScreen.RenderMode.CONTINUOUS)
                                     when {
                                         !com.ootruffle.clientmetics.Config.get().enabled ->
                                             "Clientmetics is turned off. Turn \"Enabled\" on in the Clientmetics settings."
+                                        view.sources.isEmpty() && (HostClients.lunar() || HostClients.dawn() || HostClients.essential()) ->
+                                            "Nothing to show: the cosmetics that are on here are already drawn by the client you're running. Use its own wardrobe."
                                         view.sources.isEmpty() ->
                                             "Lunar, Dawn and Essential cosmetics are all turned off. Turn one on in the Clientmetics settings."
                                         !view.loaded && view.busy -> "Loading your ${view.source.name()} cosmetics..."

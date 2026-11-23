@@ -62,6 +62,21 @@ public final class Config {
 
     private static Config instance = new Config();
 
+    /** Lunar cosmetics are wanted: on in the settings, and not running in Lunar Client (which draws its own). */
+    public boolean lunarOn() {
+        return lunar && !com.ootruffle.clientmetics.compat.HostClients.lunar();
+    }
+
+    /** Dawn cosmetics are wanted: on in the settings, and Dawn Client isn't running (it draws its own). */
+    public boolean dawnOn() {
+        return dawn && !com.ootruffle.clientmetics.compat.HostClients.dawn();
+    }
+
+    /** Essential cosmetics are wanted: on in the settings, and Essential isn't installed (it draws its own). */
+    public boolean essentialOn() {
+        return essential && !com.ootruffle.clientmetics.compat.HostClients.essential();
+    }
+
     public static Config get() {
         return instance;
     }

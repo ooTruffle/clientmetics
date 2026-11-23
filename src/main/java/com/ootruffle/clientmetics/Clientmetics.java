@@ -41,6 +41,7 @@ public final class Clientmetics implements ModInitializer {
         OneConfigCompat.init();
         ClientTagCompat.init();
         EssentialCompat.init();
+        com.ootruffle.clientmetics.compat.HostClients.init();
         // The catalogues are loaded once the first-launch warning has been accepted (see Consent).
         LOGGER.info("Clientmetics initialised");
     }

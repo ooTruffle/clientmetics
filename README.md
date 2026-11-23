@@ -49,6 +49,16 @@ Not supported for Dawn:
 - **AVIF textures.** Java has no AVIF decoder (Dawn ships a native one), so anything with only an `.avif` texture is skipped. That is most cloaks (301 of 323 at the time of writing) and most shields; nearly every model type uses WebP and works.
 - Shields, trims, emotes, the `fly` animation clip, `hideDuringCombat`, and the few wings that have a texture but no model.
 
+## Running inside Lunar, Dawn or Essential
+
+Each of those already draws its own cosmetics, so Clientmetics leaves that source to it and keeps the others:
+
+- **Lunar Client** (its launcher sets `ichor.*` system properties; its classes are under `com.moonsworth.lunar`): Lunar cosmetics are off, Dawn and Essential still show.
+- **Dawn Client** (Fabric mod `dawn`, or `feather`): Dawn cosmetics are off.
+- **Essential** installed: Essential cosmetics are off.
+
+With none of them, all three run. A source left to its client also drops out of the wardrobe; use that client's own wardrobe instead. `-Dclientmetics.hostClient=lunar,dawn,essential` (any of them) pretends they are present, for testing.
+
 ## ClientTag
 
 If ClientTag is installed (found at runtime, not required):

@@ -181,7 +181,7 @@ public final class CosmeticRenderer implements LayerRenderer<AbstractClientPlaye
      */
     public static boolean coversSkinLayer(AbstractClientPlayer player, int bit) {
         final Config config = Config.get();
-        if (bit == 0 || !config.enabled || !config.essential || player.isInvisible()) {
+        if (bit == 0 || !config.enabled || !config.essentialOn() || player.isInvisible()) {
             return false;
         }
         final EssentialSnapshot snapshot = PreviewRenderer.essentialOutfitFor(player.getUniqueID());
@@ -214,7 +214,7 @@ public final class CosmeticRenderer implements LayerRenderer<AbstractClientPlaye
      */
     public static GeoCosmetic torsoCover(AbstractClientPlayer player) {
         final Config config = Config.get();
-        final EssentialSnapshot snapshot = config.enabled && config.essential
+        final EssentialSnapshot snapshot = config.enabled && config.essentialOn()
                 ? PreviewRenderer.essentialOutfitFor(player.getUniqueID()) : null;
         final EssentialCatalog catalog = snapshot == null ? null : EssentialCatalog.get();
         if (catalog == null) {
@@ -283,12 +283,12 @@ public final class CosmeticRenderer implements LayerRenderer<AbstractClientPlaye
         if (!config.enabled || player.isInvisible()) {
             return;
         }
-        final List<EquippedCosmetic> outfit = catalog == null || !config.lunar ? java.util.Collections.<EquippedCosmetic>emptyList()
+        final List<EquippedCosmetic> outfit = catalog == null || !config.lunarOn() ? java.util.Collections.<EquippedCosmetic>emptyList()
                 : PreviewRenderer.outfitFor(player.getUniqueID());
         // Wardrobe previews show one outfit (Lunar or Dawn) on its own.
-        final DawnCatalog dawnCatalog = config.dawn ? DawnCatalog.get() : null;
+        final DawnCatalog dawnCatalog = config.dawnOn() ? DawnCatalog.get() : null;
         final Collection<String> dawn = dawnCatalog == null ? null : PreviewRenderer.dawnOutfitFor(player.getUniqueID());
-        final EssentialCatalog essentialCatalog = config.essential ? EssentialCatalog.get() : null;
+        final EssentialCatalog essentialCatalog = config.essentialOn() ? EssentialCatalog.get() : null;
         EssentialSnapshot essential = essentialCatalog == null ? null
                 : PreviewRenderer.essentialOutfitFor(player.getUniqueID());
         if (player == Minecraft.getMinecraft().thePlayer && !config.showOwn && !PreviewRenderer.isRendering()) {

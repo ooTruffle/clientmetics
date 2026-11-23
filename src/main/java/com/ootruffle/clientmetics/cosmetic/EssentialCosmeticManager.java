@@ -109,8 +109,7 @@ public final class EssentialCosmeticManager {
         final boolean multiplayer = mc.theWorld != null && !mc.isSingleplayer();
         // The catalogue and your own outfit arrive over this socket, so it is kept up even in a menu
         // (the wardrobe can be opened from there); only player tracking needs a world.
-        final boolean wanted = config.enabled && config.termsNoticeSeen && config.essential
-                && !com.ootruffle.clientmetics.compat.EssentialCompat.installed();
+        final boolean wanted = config.enabled && config.termsNoticeSeen && config.essentialOn();
         final boolean inWorld = mc.theWorld != null && (multiplayer || config.showOwn);
         if (wanted != wasWanted) {
             wasWanted = wanted;

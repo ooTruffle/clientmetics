@@ -174,7 +174,7 @@ public final class DawnAccount {
     /** Why the account can't be reached right now, or null if it can. */
     private static String unavailable() {
         final Config config = Config.get();
-        if (!config.dawn) {
+        if (!config.dawnOn()) {
             return "Dawn cosmetics are turned off in the settings.";
         }
         if (DawnCatalog.get() == null) {

@@ -90,7 +90,7 @@ public final class DawnCosmeticManager {
         final Minecraft mc = Minecraft.getMinecraft();
         final Config config = Config.get();
         final boolean multiplayer = mc.theWorld != null && !mc.isSingleplayer();
-        final boolean active = config.enabled && config.termsNoticeSeen && config.dawn && DawnCatalog.get() != null && mc.theWorld != null
+        final boolean active = config.enabled && config.termsNoticeSeen && config.dawnOn() && DawnCatalog.get() != null && mc.theWorld != null
                 && (multiplayer || config.showOwn);
         if (active != wasActive) {
             wasActive = active;

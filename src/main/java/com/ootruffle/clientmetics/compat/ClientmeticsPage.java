@@ -34,13 +34,13 @@ public final class ClientmeticsPage extends org.polyfrost.oneconfig.api.config.v
     @Switch(title = "Show My Own Cosmetics", description = "Your own equipped Lunar cosmetics, in third person.", subcategory = "General")
     public boolean showOwn = true;
 
-    @Switch(title = "Lunar Cosmetics", description = "Show the Lunar Client cosmetics other players have equipped.", subcategory = "General")
+    @Switch(title = "Lunar Cosmetics", description = "Show the Lunar Client cosmetics other players have equipped. Off by itself in Lunar Client, which shows them already.", subcategory = "General")
     public boolean lunar = true;
 
-    @Switch(title = "Dawn Cosmetics", description = "Also show the Dawn Client cosmetics other players have equipped.", subcategory = "General")
+    @Switch(title = "Dawn Cosmetics", description = "Also show the Dawn Client cosmetics other players have equipped. Off by itself with Dawn Client, which shows them already.", subcategory = "General")
     public boolean dawn = true;
 
-    @Switch(title = "Essential Cosmetics", description = "Show Essential Mod cosmetics and the wardrobe tab. Unofficial: Essential doesn't document or permit this.",
+    @Switch(title = "Essential Cosmetics", description = "Show Essential Mod cosmetics and the wardrobe tab. Unofficial: Essential doesn't document or permit this. Off by itself with Essential installed.",
             subcategory = "General")
     public boolean essential = true;
 
@@ -150,7 +150,7 @@ public final class ClientmeticsPage extends org.polyfrost.oneconfig.api.config.v
         c.downloadMissingAssets = INSTANCE.downloadMissingAssets;
         c.debug = INSTANCE.debug;
         Config.save();
-        if (!c.lunar) {
+        if (!c.lunarOn()) {
             if (Catalog.get() != null) {
                 Assets.EXECUTOR.execute(Catalog::unload);
             }
@@ -160,10 +160,10 @@ public final class ClientmeticsPage extends org.polyfrost.oneconfig.api.config.v
         } else if (lunarTurnedOn && c.termsNoticeSeen && Catalog.get() == null) {
             Assets.EXECUTOR.execute(Catalog::load);
         }
-        if (dawnTurnedOn && c.termsNoticeSeen && com.ootruffle.clientmetics.asset.DawnCatalog.get() == null) {
+        if (dawnTurnedOn && c.dawnOn() && c.termsNoticeSeen && com.ootruffle.clientmetics.asset.DawnCatalog.get() == null) {
             Assets.EXECUTOR.execute(com.ootruffle.clientmetics.asset.DawnCatalog::load);
         }
-        if (essentialTurnedOn && c.termsNoticeSeen && com.ootruffle.clientmetics.asset.EssentialCatalog.get() == null) {
+        if (essentialTurnedOn && c.essentialOn() && c.termsNoticeSeen && com.ootruffle.clientmetics.asset.EssentialCatalog.get() == null) {
             Assets.EXECUTOR.execute(com.ootruffle.clientmetics.asset.EssentialCatalog::load);
         }
     }

@@ -77,13 +77,13 @@ public final class Consent {
             if (!started) {
                 started = true;
                 // The catalogue is a few MB of JSON: read it off the client thread.
-                if (Config.get().lunar) {
+                if (Config.get().lunarOn()) {
                     Assets.EXECUTOR.execute(Catalog::load);
                 }
-                if (Config.get().dawn) {
+                if (Config.get().dawnOn()) {
                     Assets.EXECUTOR.execute(DawnCatalog::load);
                 }
-                if (Config.get().essential) {
+                if (Config.get().essentialOn()) {
                     Assets.EXECUTOR.execute(com.ootruffle.clientmetics.asset.EssentialCatalog::load);
                 }
             }

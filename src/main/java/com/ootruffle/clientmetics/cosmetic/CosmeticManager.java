@@ -120,7 +120,7 @@ public final class CosmeticManager {
         final Minecraft mc = Minecraft.getMinecraft();
         final Config config = Config.get();
         final boolean multiplayer = mc.theWorld != null && !mc.isSingleplayer();
-        final boolean active = config.enabled && config.lunar && config.termsNoticeSeen && Catalog.get() != null && mc.theWorld != null
+        final boolean active = config.enabled && config.lunarOn() && config.termsNoticeSeen && Catalog.get() != null && mc.theWorld != null
                 && (multiplayer || config.showOwn);
 
         // A world change alone (swapping lobbies) resets nothing: the next sync drops whoever is

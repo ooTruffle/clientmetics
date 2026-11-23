@@ -193,7 +193,7 @@ public abstract class WardrobeSource {
 
     private static final class Lunar extends WardrobeSource {
         @Override public String name() { return "Lunar"; }
-        @Override public boolean available() { return Config.get().lunar; }
+        @Override public boolean available() { return Config.get().lunarOn(); }
         @Override protected Object state() { return Catalog.get() == null ? null : LunarAccount.state(); }
         @Override public String status() { return LunarAccount.status(); }
         @Override public boolean busy() { return LunarAccount.isBusy(); }
@@ -247,7 +247,7 @@ public abstract class WardrobeSource {
 
     private static final class Dawn extends WardrobeSource {
         @Override public String name() { return "Dawn"; }
-        @Override public boolean available() { return Config.get().dawn && DawnCatalog.get() != null; }
+        @Override public boolean available() { return Config.get().dawnOn() && DawnCatalog.get() != null; }
         @Override protected Object state() { return DawnCatalog.get() == null ? null : DawnAccount.state(); }
         @Override public String status() { return DawnAccount.status(); }
         @Override public boolean busy() { return DawnAccount.isBusy(); }
@@ -313,7 +313,7 @@ public abstract class WardrobeSource {
             // Deliberately not gated on the catalogue: Essential only sends that over its socket, so
             // requiring it here would hide the tab for good whenever the connection isn't up — and
             // the tab is where the reason for that is shown.
-            return Config.get().essential && !com.ootruffle.clientmetics.compat.EssentialCompat.installed();
+            return Config.get().essentialOn();
         }
         @Override protected Object state() { return EssentialAccount.state(); }
         @Override public String status() { return EssentialAccount.status(); }
