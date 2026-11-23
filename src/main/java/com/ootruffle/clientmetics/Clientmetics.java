@@ -75,6 +75,30 @@ public final class Clientmetics implements ModInitializer {
         return com.ootruffle.clientmetics.compat.compose.ComposeWardrobe.create();
     }
 
+    /**
+     * Opens the wardrobe. If PolyCompose can't make or open it (say, a version this mod wasn't
+     * built against), says so in the log and chat instead of taking the game down from the client
+     * tick. ({@code -Dpolycompose.ui.disable} doesn't land here: PolyCompose refuses the screen
+     * itself, with its own chat message.)
+     */
+    private static void openWardrobeScreen() {
+        final Minecraft mc = Minecraft.getMinecraft();
+        try {
+            mc.displayGuiScreen(wardrobeScreen());
+        } catch (Throwable t) {
+            LOGGER.error("Couldn't open the wardrobe (PolyCompose {} is installed; Clientmetics needs 3.0 or newer)",
+                    net.fabricmc.loader.api.FabricLoader.getInstance().getModContainer("polycompose")
+                            .map(m -> m.getMetadata().getVersion().getFriendlyString()).orElse("?"), t);
+            if (!(mc.currentScreen instanceof net.minecraft.client.gui.GuiMainMenu)) {
+                mc.displayGuiScreen(null);
+            }
+            if (mc.thePlayer != null) {
+                mc.thePlayer.addChatMessage(new net.minecraft.util.ChatComponentText(
+                        "§c[Clientmetics] Couldn't open the wardrobe: " + t + ". See the log for details."));
+            }
+        }
+    }
+
     /** End of every client tick (see {@code MinecraftMixin}). */
     public static void onClientTick() {
         if (openWardrobe) {
@@ -89,7 +113,7 @@ public final class Clientmetics implements ModInitializer {
                 } else if (essential && com.ootruffle.clientmetics.render.WardrobeSource.ESSENTIAL.available()) {
                     com.ootruffle.clientmetics.render.WardrobeSource.select(com.ootruffle.clientmetics.render.WardrobeSource.ESSENTIAL);
                 }
-                Minecraft.getMinecraft().displayGuiScreen(wardrobeScreen());
+                openWardrobeScreen();
             } else {
                 // The wardrobe talks to Lunar: ask the first-launch question (again) instead.
                 Consent.askAgain();

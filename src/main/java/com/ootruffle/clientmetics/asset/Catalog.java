@@ -134,6 +134,18 @@ public final class Catalog {
         return entries.size();
     }
 
+    /**
+     * Drops the catalogue (a few MB) after Lunar is turned off. Lunar cosmetics already loaded stop
+     * being drawn and are freed by {@link MemoryJanitor} once they've gone unused. Does nothing if
+     * Lunar was turned back on before this ran.
+     */
+    public static synchronized void unload() {
+        if (instance != null && !Config.get().lunar) {
+            instance = null;
+            Clientmetics.LOGGER.info("Lunar cosmetics turned off; unloaded the Lunar catalogue");
+        }
+    }
+
     /** Picks where the catalogue comes from (see {@code catalogueSource}) and loads it. Blocking; may use the network. */
     public static synchronized void load() {
         final String source = String.valueOf(Config.get().catalogueSource).toLowerCase(java.util.Locale.ROOT);

@@ -34,6 +34,12 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.input.InputTransformation
+import androidx.compose.foundation.text.input.TextFieldLineLimits
+import androidx.compose.foundation.text.input.TextFieldState
+import androidx.compose.foundation.text.input.clearText
+import androidx.compose.foundation.text.input.maxLengthReject
+import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
@@ -363,13 +369,16 @@ class ComposeWardrobeScreen : ComposeScreen(ComposeScreen.RenderMode.CONTINUOUS)
         var sourceVersion by remember { mutableStateOf(0) }
         val view = remember(tick, sourceVersion) {
             val source = WardrobeSource.current()
+            val sources = WardrobeSource.all()
+            // With every source off, `source` is only a placeholder: don't show its connection status.
             View(
-                source, WardrobeSource.all(), source.loaded(), source.busy(), source.status(),
+                source, sources, source.loaded(), source.busy(), if (sources.isEmpty()) "" else source.status(),
                 source.owned(), source.equipped(), if (source.hasSettings()) LunarAccount.state() else null,
             )
         }
         var filter by remember { mutableStateOf<String?>(null) }
-        var query by remember { mutableStateOf("") }
+        val search = rememberTextFieldState()
+        val query = search.text.toString()
 
         val categories = view.owned.groupingBy { it.category }.eachCount().entries.sortedByDescending { it.value }.map { it.key }
         val items = view.owned
@@ -391,7 +400,7 @@ class ComposeWardrobeScreen : ComposeScreen(ComposeScreen.RenderMode.CONTINUOUS)
                     Modifier.weight(1f).fillMaxHeight().padding(vertical = 19.dp),
                     verticalArrangement = Arrangement.spacedBy(19.dp),
                 ) {
-                    Header(view.source, query, { query = it }, Modifier.padding(horizontal = PageGutter))
+                    Header(if (view.sources.isEmpty()) "" else "${view.source.name()} account", search, Modifier.padding(horizontal = PageGutter))
                     Row(
                         Modifier.padding(horizontal = PageGutter).horizontalScroll(rememberScrollState()),
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -412,6 +421,10 @@ class ComposeWardrobeScreen : ComposeScreen(ComposeScreen.RenderMode.CONTINUOUS)
                             if (items.isEmpty()) {
                                 Label(
                                     when {
+                                        !com.ootruffle.clientmetics.Config.get().enabled ->
+                                            "Clientmetics is turned off. Turn \"Enabled\" on in the Clientmetics settings."
+                                        view.sources.isEmpty() ->
+                                            "Lunar, Dawn and Essential cosmetics are all turned off. Turn one on in the Clientmetics settings."
                                         !view.loaded && view.busy -> "Loading your ${view.source.name()} cosmetics..."
                                         !view.loaded -> view.status.ifEmpty { "Not loaded yet." }
                                         filter == EQUIPPED && query.isBlank() -> "Nothing equipped."
@@ -587,7 +600,7 @@ class ComposeWardrobeScreen : ComposeScreen(ComposeScreen.RenderMode.CONTINUOUS)
 
     /** OneConfig's header: back and forward, the title with a byline, then search and close. */
     @Composable
-    private fun Header(source: WardrobeSource, query: String, onQuery: (String) -> Unit, modifier: Modifier) {
+    private fun Header(subtitle: String, search: TextFieldState, modifier: Modifier) {
         val theme = LocalTheme.current
         Row(
             modifier.fillMaxWidth().height(36.dp),
@@ -605,11 +618,11 @@ class ComposeWardrobeScreen : ComposeScreen(ComposeScreen.RenderMode.CONTINUOUS)
                 }
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("Wardrobe", color = theme.textColor, fontSize = 24.sp, fontWeight = FontWeight.Medium)
-                    Text("${source.name()} account", color = theme.textColorSecondary, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                    Text(subtitle, color = theme.textColorSecondary, fontSize = 14.sp, fontWeight = FontWeight.Medium)
                 }
             }
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(26.dp)) {
-                SearchField(query, onQuery)
+                SearchField(search)
                 IconButton("close", 32.dp, hoverBorder = true) { requestClose() }
             }
         }
@@ -617,7 +630,8 @@ class ComposeWardrobeScreen : ComposeScreen(ComposeScreen.RenderMode.CONTINUOUS)
 
     /** OneConfig's search bar. */
     @Composable
-    private fun SearchField(value: String, onChange: (String) -> Unit) {
+    private fun SearchField(state: TextFieldState) {
+        val value = state.text
         val theme = LocalTheme.current
         val interaction = remember { MutableInteractionSource() }
         val focused by interaction.collectIsFocusedAsState()
@@ -627,14 +641,14 @@ class ComposeWardrobeScreen : ComposeScreen(ComposeScreen.RenderMode.CONTINUOUS)
             lineHeightStyle = LineHeightStyle(LineHeightStyle.Alignment.Center, LineHeightStyle.Trim.Both),
         )
         BasicTextField(
-            value = value,
-            onValueChange = { if (it.length <= 40) onChange(it) },
-            singleLine = true,
+            state = state,
+            inputTransformation = InputTransformation.maxLengthReject(40),
+            lineLimits = TextFieldLineLimits.SingleLine,
             textStyle = style,
             cursorBrush = SolidColor(theme.textColorSecondary),
             interactionSource = interaction,
             modifier = Modifier.textInputWhileFocused(),
-            decorationBox = { inner ->
+            decorator = { inner ->
                 Box(
                     Modifier.width(256.dp).height(32.dp)
                         .background(theme.chipBackground, theme.navEntryShape)
@@ -653,7 +667,7 @@ class ComposeWardrobeScreen : ComposeScreen(ComposeScreen.RenderMode.CONTINUOUS)
                             }
                             inner()
                         }
-                        if (value.isNotEmpty()) IconButton("close", 16.dp) { onChange("") }
+                        if (value.isNotEmpty()) IconButton("close", 16.dp) { state.clearText() }
                     }
                 }
             },

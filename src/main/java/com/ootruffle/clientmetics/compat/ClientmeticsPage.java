@@ -150,7 +150,11 @@ public final class ClientmeticsPage extends org.polyfrost.oneconfig.api.config.v
         c.downloadMissingAssets = INSTANCE.downloadMissingAssets;
         c.debug = INSTANCE.debug;
         Config.save();
-        if (catalogueChanged && Catalog.get() != null) {
+        if (!c.lunar) {
+            if (Catalog.get() != null) {
+                Assets.EXECUTOR.execute(Catalog::unload);
+            }
+        } else if (catalogueChanged && Catalog.get() != null) {
             Clientmetics.LOGGER.info("Catalogue setting changed; reloading the Lunar catalogue");
             Assets.EXECUTOR.execute(Catalog::load);
         } else if (lunarTurnedOn && c.termsNoticeSeen && Catalog.get() == null) {
