@@ -2,6 +2,10 @@
 
 An Ornithe mod for Minecraft 1.8.9 that shows the Lunar Client cosmetics other players have equipped, so a non-Lunar player sees what Lunar users see. It only shows cosmetics players own and have equipped. It never unlocks anything.
 
+## AI DISCLOSURE
+this mod is almost entirely sloped, pr's are accepted to clean up the code
+#
+
 ## How it works
 
 - **Who wears what:** logs in to Lunar's authenticator with the game's own Mojang session, opens the game websocket, and sends `SubscribeV2` / `Unsubscribe` as players come in and out of range. `PlayerCosmeticsPushV2` replies and pushes fill a UUID → outfit map.
