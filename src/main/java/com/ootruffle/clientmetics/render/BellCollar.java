@@ -91,7 +91,8 @@ public final class BellCollar {
                 swing = new Swing();
                 SWINGS.put(player, swing);
             }
-            if (step(player, swing) && jingle && !player.isInvisible()) {
+            // Sneaking keeps the bell quiet (it still swings).
+            if (step(player, swing) && jingle && !player.isInvisible() && !player.isSneaking()) {
                 final float strength = Math.min(1f, (Math.abs(swing.forward) + Math.abs(swing.side)) / 45f);
                 rings++;
                 playJingle(mc, player.posX, player.posY + 1.2, player.posZ,
@@ -103,9 +104,15 @@ public final class BellCollar {
     /**
      * Plays the bundled jingle ({@code clientmetics:bell_collar}, from the mod's sounds.json) at a spot
      * in the world, through the game's own sound handler so it works with whatever sound engine is in
-     * use (vanilla's, or a replacement like SoundFix). Players volume.
+     * use (vanilla's, or a replacement like SoundFix). Scaled by the game's Players volume and by
+     * {@link Config#bellVolume} (this client only; 0 plays nothing).
      */
     private static void playJingle(Minecraft mc, double x, double y, double z, float volume, float pitch) {
+        final int local = Math.max(0, Math.min(100, Config.get().bellVolume));
+        if (local == 0) {
+            return;
+        }
+        volume *= local / 100f;
         mc.getSoundHandler().playSound(new PositionedSoundRecord(JINGLE, volume, pitch, (float) x, (float) y, (float) z));
     }
 
