@@ -41,6 +41,17 @@ public final class Config {
      * manager, which Essential does not document or permit (the first-launch notice says so).
      */
     public boolean essential = true;
+    /**
+     * Cosmetic colours: show the colours other Clientmetics users picked for their cosmetics, and
+     * share yours (connects to the Clientmetics colour server with the game's own session).
+     */
+    public boolean recolours = true;
+    /** Wear the bell collar (only if the colour server has granted it to you; see {@link com.ootruffle.clientmetics.cosmetic.Recolours}). */
+    public boolean bellCollar = true;
+    /** Your bell collar jingles as it swings, for everyone who sees it. */
+    public boolean bellJingle = true;
+    /** The extras the colour server last said you may wear, so they show in singleplayer too. */
+    public java.util.List<String> grantedExtras = new java.util.ArrayList<>();
     /** Show your own equipped cosmetics in third person. */
     public boolean showOwn = true;
     public boolean showCloaks = true;

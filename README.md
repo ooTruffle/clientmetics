@@ -49,6 +49,27 @@ Not supported for Dawn:
 - **AVIF textures.** Java has no AVIF decoder (Dawn ships a native one), so anything with only an `.avif` texture is skipped. That is most cloaks (301 of 323 at the time of writing) and most shields; nearly every model type uses WebP and works.
 - Shields, trims, emotes, the `fly` animation clip, `hideDuringCombat`, and the few wings that have a texture but no model.
 
+## Cosmetic colours
+
+Clientmetics users can pick a colour for any cosmetic they're wearing (Lunar, Dawn or Essential),
+and other Clientmetics users see it. In the wardrobe, open an equipped cosmetic's settings (the cog on
+its card, or its row in the Equipped list) and click or drag on the hue bar, or pick a preset; the
+refresh button puts its own colours back.
+
+- **Shared through the Clientmetics colour server** (`server/` in this repository, separate from
+  ClientTag's). It signs in with a Mojang session join, like ClientTag, and keeps only each player's
+  colours by UUID. While you're on a server the mod sends your colours after a change and looks up
+  the players around you every 30 seconds (sooner when new players appear). Only players whose mod is
+  running are answered for.
+- **Never unlocks anything.** A colour only changes how a cosmetic is drawn when Lunar, Dawn or
+  Essential say that player is wearing it. Players without Clientmetics see the original colours.
+- **How it's recoloured:** coloured textures have their hues turned so the main colour becomes the
+  one picked (other colours turn with it; greys, blacks and whites stay). Mostly grey textures are
+  tinted instead. White greys a coloured item out.
+- Your colours are kept in `config/clientmetics/colours.json` (at most 64). Turn the whole thing off
+  with `recolours` (**Cosmetic Colours** on the Clientmetics page). `-Dclientmetics.server=<url>`
+  points the mod at another copy of the server.
+
 ## Running inside Lunar, Dawn or Essential
 
 Each of those already draws its own cosmetics, so Clientmetics leaves that source to it and keeps the others:

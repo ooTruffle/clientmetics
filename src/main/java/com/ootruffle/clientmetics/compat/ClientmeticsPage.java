@@ -44,6 +44,10 @@ public final class ClientmeticsPage extends org.polyfrost.oneconfig.api.config.v
             subcategory = "General")
     public boolean essential = true;
 
+    @Switch(title = "Cosmetic Colours", description = "Show the colours other Clientmetics users picked for their cosmetics, and share yours (pick them in the wardrobe). Uses the Clientmetics colour server.",
+            subcategory = "General")
+    public boolean recolours = true;
+
     @Slider(title = "Max Players", description = "How many of the nearest players get cosmetics.", min = 10, max = 500, step = 10, subcategory = "General")
     public int maxPlayers = 200;
 
@@ -123,6 +127,7 @@ public final class ClientmeticsPage extends org.polyfrost.oneconfig.api.config.v
                 || c.showOwn != INSTANCE.showOwn
                 || c.dawn != INSTANCE.dawn
                 || c.essential != INSTANCE.essential
+                || c.recolours != INSTANCE.recolours
                 || c.maxPlayers != INSTANCE.maxPlayers
                 || c.showCloaks != INSTANCE.showCloaks
                 || c.showHats != INSTANCE.showHats
@@ -139,6 +144,7 @@ public final class ClientmeticsPage extends org.polyfrost.oneconfig.api.config.v
         c.showOwn = INSTANCE.showOwn;
         c.dawn = INSTANCE.dawn;
         c.essential = INSTANCE.essential;
+        c.recolours = INSTANCE.recolours;
         c.maxPlayers = INSTANCE.maxPlayers;
         c.showCloaks = INSTANCE.showCloaks;
         c.showHats = INSTANCE.showHats;
@@ -174,6 +180,7 @@ public final class ClientmeticsPage extends org.polyfrost.oneconfig.api.config.v
         showOwn = c.showOwn;
         dawn = c.dawn;
         essential = c.essential;
+        recolours = c.recolours;
         maxPlayers = c.maxPlayers;
         showCloaks = c.showCloaks;
         showHats = c.showHats;

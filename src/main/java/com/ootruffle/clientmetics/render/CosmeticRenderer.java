@@ -13,6 +13,7 @@ import com.ootruffle.clientmetics.asset.EssentialFiles;
 import com.ootruffle.clientmetics.asset.Textures;
 import com.ootruffle.clientmetics.cosmetic.EquippedCosmetic;
 import com.ootruffle.clientmetics.cosmetic.EssentialSnapshot;
+import com.ootruffle.clientmetics.cosmetic.Recolours;
 import com.ootruffle.clientmetics.model.GeoAnimation;
 import com.ootruffle.clientmetics.model.GeoCosmetic;
 import com.ootruffle.clientmetics.model.GeoModel;
@@ -245,6 +246,23 @@ public final class CosmeticRenderer implements LayerRenderer<AbstractClientPlaye
         return best;
     }
 
+    /** The Essential id of the worn cosmetic whose model is {@code geo} (from {@link #torsoCover}), or null. */
+    public static String essentialIdOf(AbstractClientPlayer player, GeoCosmetic geo) {
+        final EssentialSnapshot snapshot = geo == null ? null : PreviewRenderer.essentialOutfitFor(player.getUniqueID());
+        final EssentialCatalog catalog = snapshot == null ? null : EssentialCatalog.get();
+        if (catalog == null) {
+            return null;
+        }
+        for (String cosmeticId : snapshot.equipped.values()) {
+            final EssentialCatalog.Entry entry = catalog.entry(cosmeticId);
+            if (entry != null && Assets.get("geo", GeoCosmetic.essentialKey(entry.id, snapshot.variantOf(entry.id)),
+                    GeoCosmetic::load) == geo) {
+                return entry.id;
+            }
+        }
+        return null;
+    }
+
     private static float outer(GeoCosmetic geo) {
         return geo.torsoFront[geo.torsoFront.length - 1][2];
     }
@@ -294,6 +312,8 @@ public final class CosmeticRenderer implements LayerRenderer<AbstractClientPlaye
         if (player == Minecraft.getMinecraft().thePlayer && !config.showOwn && !PreviewRenderer.isRendering()) {
             essential = null;
         }
+        // This mod's own cosmetic, whatever else they wear.
+        BellCollar.render(player, renderer.getMainModel(), partialTicks);
         if (outfit.isEmpty() && (dawn == null || dawn.isEmpty()) && (essential == null || essential.equipped.isEmpty())) {
             return;
         }
@@ -312,7 +332,7 @@ public final class CosmeticRenderer implements LayerRenderer<AbstractClientPlaye
                     if (scope == null) {
                         scope = scope(player, limbSwing, limbSwingAmount, partialTicks, netHeadYaw, headPitch);
                     }
-                    renderGeo(player, model, geo(entry), cosmetic, scope, null, null);
+                    renderGeo(player, model, geo(entry), cosmetic, scope, null, null, "lunar:" + cosmetic.id);
                 }
             } else {
                 renderObj(player, model, catalog, entry, cosmetic);
@@ -327,7 +347,8 @@ public final class CosmeticRenderer implements LayerRenderer<AbstractClientPlaye
                 if (scope == null) {
                     scope = scope(player, limbSwing, limbSwingAmount, partialTicks, netHeadYaw, headPitch);
                 }
-                renderGeo(player, model, Assets.get("geo", GeoCosmetic.dawnKey(slug), GeoCosmetic::load), null, scope, null, null);
+                renderGeo(player, model, Assets.get("geo", GeoCosmetic.dawnKey(slug), GeoCosmetic::load), null, scope, null, null,
+                        "dawn:" + slug);
             }
         }
         if (essential != null) {
@@ -352,7 +373,7 @@ public final class CosmeticRenderer implements LayerRenderer<AbstractClientPlaye
                 GlStateManager.enablePolygonOffset();
                 GlStateManager.doPolygonOffset(-1.0F, -10.0F);
                 renderGeo(player, model, geo, null, scope, essential.positionAdjustment(entry.id),
-                        hiddenBones(essential, entry.id, geo));
+                        hiddenBones(essential, entry.id, geo), "essential:" + entry.id);
                 GlStateManager.doPolygonOffset(0.0F, 0.0F);
                 GlStateManager.disablePolygonOffset();
             }
@@ -389,7 +410,8 @@ public final class CosmeticRenderer implements LayerRenderer<AbstractClientPlaye
             return;
         }
         final ObjModel obj = obj(settings);
-        final ResourceLocation texture = Textures.get(entry.resource, Textures.Kind.MODEL);
+        final ResourceLocation texture = Textures.get(entry.resource, Textures.Kind.MODEL,
+                Recolours.colour(player.getUniqueID(), "lunar:" + cosmetic.id));
         if (obj == null || texture == null) {
             return;
         }
@@ -525,18 +547,19 @@ public final class CosmeticRenderer implements LayerRenderer<AbstractClientPlaye
     /**
      * {@code cosmetic} is the Lunar equip settings, or null for a Dawn or Essential cosmetic (its own
      * data decides). {@code adjustment} is an extra block offset, or null; {@code hiddenBones} are
-     * bone names to leave out, or null.
+     * bone names to leave out, or null. {@code key} names the cosmetic for {@link Recolours}.
      */
     private static void renderGeo(AbstractClientPlayer player, ModelPlayer model, GeoCosmetic geo,
                                   EquippedCosmetic cosmetic, Molang.Scope scope, float[] adjustment,
-                                  java.util.Set<String> hiddenBones) {
+                                  java.util.Set<String> hiddenBones, String key) {
         if (geo == null || geo.isEmptyModel()) {
             return; // Particle-only effects: nothing to draw, so don't upload their particle sheets.
         }
         if (cosmetic != null ? hiddenByArmor(player, geo.type, cosmetic) : hiddenByArmor(player, geo.hiddenByArmor)) {
             return;
         }
-        final ResourceLocation texture = Textures.get(geo.texturePath, Textures.Kind.MODEL);
+        final ResourceLocation texture = Textures.get(geo.texturePath, Textures.Kind.MODEL,
+                Recolours.colour(player.getUniqueID(), key));
         if (texture == null) {
             return;
         }

@@ -36,7 +36,22 @@ public final class AssetFiles {
 
     private AssetFiles() {}
 
+    /** Marks a file shipped inside this mod ({@code assets/clientmetics/...}), such as the bell collar's textures. */
+    public static final String BUNDLED = "bundled:";
+
     public static byte[] read(String path) throws IOException {
+        if (path.startsWith(BUNDLED)) {
+            final String name = path.substring(BUNDLED.length());
+            if (name.contains("..")) {
+                throw new IOException("bad path " + path);
+            }
+            try (InputStream in = AssetFiles.class.getResourceAsStream("/assets/clientmetics/" + name)) {
+                if (in == null) {
+                    throw new java.io.FileNotFoundException(path);
+                }
+                return readLimited(in);
+            }
+        }
         if (DawnFiles.handles(path)) {
             return DawnFiles.read(path);
         }
@@ -53,6 +68,9 @@ public final class AssetFiles {
 
     /** Whether the file can be found without the network. */
     public static boolean existsLocally(String path) {
+        if (path.startsWith(BUNDLED)) {
+            return AssetFiles.class.getResource("/assets/clientmetics/" + path.substring(BUNDLED.length())) != null;
+        }
         if (DawnFiles.handles(path)) {
             return DawnFiles.existsLocally(path);
         }
@@ -80,6 +98,9 @@ public final class AssetFiles {
 
     /** Whether the file exists anywhere: locally or in the launcher's download list. */
     public static boolean exists(String path) {
+        if (path.startsWith(BUNDLED)) {
+            return existsLocally(path);
+        }
         if (DawnFiles.handles(path)) {
             return DawnFiles.exists(path);
         }

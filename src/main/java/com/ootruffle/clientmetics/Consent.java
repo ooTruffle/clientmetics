@@ -27,9 +27,10 @@ public final class Consent {
      * <ul>
      *     <li>0: Lunar and Dawn (before this was tracked).</li>
      *     <li>2: Essential, now on by default, and the Lunar switch.</li>
+     *     <li>3: The Clientmetics colour server (cosmetic colours).</li>
      * </ul>
      */
-    public static final int NOTICE_VERSION = 2;
+    public static final int NOTICE_VERSION = 3;
 
     private static final int DELAY_SECONDS = 4;
     /** Ticks between attempts to put the question back after something replaced it. */
@@ -48,6 +49,10 @@ public final class Consent {
             + "with its own setting (Lunar, Dawn and Essential Cosmetics).\n"
             + "Essential support talks to Essential's own connection manager, which Essential neither documents nor "
             + "permits, and which its source licence forbids reimplementing. It can break or be refused at any time.\n"
+            + "\n"
+            + "Cosmetic colours also log your account into the Clientmetics colour server, which keeps the colours you "
+            + "pick (by Minecraft UUID) and tells other Clientmetics users near you about them. Turn it off with "
+            + "the Cosmetic Colours setting.\n"
             + "\n"
             + "Enable Clientmetics?";
     private static final String YES = "I understand, enable";

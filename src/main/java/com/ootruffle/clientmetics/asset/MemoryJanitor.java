@@ -42,7 +42,10 @@ public final class MemoryJanitor {
     private static void sweep(long textureAge, long decodedAge, long modelAge) {
         final int textures = Textures.sweep(textureAge, textureAge < 0 ? 0 : MAX_TEXTURES);
         final int decoded = Assets.sweep("texture-" + Textures.Kind.MODEL, decodedAge, null)
-                + Assets.sweep("texture-" + Textures.Kind.CLOAK, decodedAge, null);
+                + Assets.sweep("texture-" + Textures.Kind.CLOAK, decodedAge, null)
+                // Recoloured copies (see Recolour) are kinds of their own: texture-MODEL#rrggbb.
+                + Assets.sweepPrefix("texture-" + Textures.Kind.MODEL + "#", decodedAge, null)
+                + Assets.sweepPrefix("texture-" + Textures.Kind.CLOAK + "#", decodedAge, null);
         final int models = Assets.sweep("obj", modelAge, v -> ((ObjModel) v).delete())
                 + Assets.sweep("geo", modelAge, v -> ((GeoCosmetic) v).delete());
         if (Config.get().debug && textures + decoded + models > 0) {

@@ -74,7 +74,9 @@ public final class FeminineGenderCompat {
         if (geo == null || target == null || geo.torsoFront == null) {
             return;
         }
-        final ResourceLocation texture = Textures.get(geo.texturePath, Textures.Kind.MODEL);
+        final String id = CosmeticRenderer.essentialIdOf(target, geo);
+        final ResourceLocation texture = Textures.get(geo.texturePath, Textures.Kind.MODEL,
+                id == null ? -1 : com.ootruffle.clientmetics.cosmetic.Recolours.colour(target.getUniqueID(), "essential:" + id));
         if (texture == null) {
             return;
         }

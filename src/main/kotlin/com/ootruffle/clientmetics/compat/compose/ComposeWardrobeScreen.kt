@@ -8,6 +8,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
@@ -84,6 +85,8 @@ import com.ootruffle.clientmetics.asset.Catalog
 import com.ootruffle.clientmetics.compat.OneConfigCompat
 import com.ootruffle.clientmetics.cosmetic.CosmeticOptions
 import com.ootruffle.clientmetics.cosmetic.LunarAccount
+import com.ootruffle.clientmetics.cosmetic.Recolours
+import com.ootruffle.clientmetics.Config
 import com.ootruffle.clientmetics.render.PreviewRenderer
 import com.ootruffle.clientmetics.compat.HostClients
 import com.ootruffle.clientmetics.render.WardrobeDev
@@ -166,8 +169,8 @@ class ComposeWardrobeScreen : ComposeScreen(ComposeScreen.RenderMode.CONTINUOUS)
     // Keyed by WardrobeSource.Item.key; BIG is the outfit preview. Render thread only.
     private val thumbs = HashMap<String, Thumb>()
 
-    /** The equipped Lunar cosmetic whose settings are open on the right, or null for the list. */
-    private var selected by mutableStateOf<Int?>(null)
+    /** The key of the equipped cosmetic whose settings are open on the right, or null for the list. */
+    private var selected by mutableStateOf<String?>(null)
 
     private var previewYaw = 0f
     private var lastDragAt = 0L
@@ -224,8 +227,12 @@ class ComposeWardrobeScreen : ComposeScreen(ComposeScreen.RenderMode.CONTINUOUS)
 
     override fun doesGuiPauseGame(): Boolean = OneConfigPrefs.bool("pauseGame", false)
 
+    override fun devSelect(key: String?) {
+        selected = key
+    }
+
     override fun devSelectEquipped(id: Int) {
-        selected = if (id < 0) null else id
+        selected = if (id < 0) null else "lunar:$id"
     }
 
     @Composable
@@ -726,8 +733,8 @@ class ComposeWardrobeScreen : ComposeScreen(ComposeScreen.RenderMode.CONTINUOUS)
             // The type at the top left (with the settings button for equipped Lunar cosmetics), like
             // the mod card's star; the dot at the top right.
             Row(Modifier.align(Alignment.TopStart).padding(4.dp), verticalAlignment = Alignment.CenterVertically) {
-                if (equipped && source.hasSettings()) {
-                    IconButton("cog", 18.dp, Modifier.padding(3.dp)) { selected = entry.lunarId }
+                if (equipped && hasSettings(source)) {
+                    IconButton("cog", 18.dp, Modifier.padding(3.dp)) { selected = entry.key }
                 }
                 Text(
                     WardrobeSource.pretty(entry.category), Modifier.padding(horizontal = 6.dp, vertical = 5.dp),
@@ -825,16 +832,27 @@ class ComposeWardrobeScreen : ComposeScreen(ComposeScreen.RenderMode.CONTINUOUS)
                     .padding(12.dp),
                 verticalArrangement = Arrangement.spacedBy(6.dp),
             ) {
-                val open = selected?.takeIf { view.lunarState?.isEquipped(it) == true }
-                if (open != null && view.lunarState != null) {
-                    Settings(view.lunarState, open, view.busy)
+                // This mod's own cosmetics, listed with every source once the colour server grants them.
+                val extras = if (Config.get().recolours && Recolours.granted(Recolours.BELL_COLLAR)) {
+                    listOf(WardrobeSource.Item.extra(Recolours.BELL_COLLAR_KEY, "Bell Collar"))
+                } else {
+                    emptyList()
+                }
+                val open = selected?.let { key -> (view.equipped + extras).firstOrNull { it.key == key } }
+                if (open != null) {
+                    Settings(view, open)
                 } else {
                     Text("EQUIPPED", color = theme.textColor, fontSize = 11.sp, fontWeight = FontWeight.Medium)
                     when {
                         !view.loaded -> Label(if (view.busy) "Loading..." else "Not loaded", 13.sp, theme.textColorSecondary)
-                        view.equipped.isEmpty() -> Label("Nothing yet", 13.sp, theme.textColorSecondary)
+                        view.equipped.isEmpty() && extras.isEmpty() -> Label("Nothing yet", 13.sp, theme.textColorSecondary)
                         else -> for (c in view.equipped.take(6)) {
-                            ListRow(c.name, if (view.source.hasSettings()) ({ selected = c.lunarId }) else null)
+                            ListRow(c.name, if (hasSettings(view.source)) ({ selected = c.key }) else null)
+                        }
+                    }
+                    if (view.loaded) {
+                        for (c in extras) {
+                            ListRow(c.name + if (Config.get().bellCollar) "" else " (off)") { selected = c.key }
                         }
                     }
                 }
@@ -870,21 +888,73 @@ class ComposeWardrobeScreen : ComposeScreen(ComposeScreen.RenderMode.CONTINUOUS)
         }
     }
 
-    /** The selected equipped Lunar cosmetic's settings, saved to the account as they change. */
+    /** Whether equipped cosmetics of this source have a settings panel: Lunar's own settings, or a colour. */
+    private fun hasSettings(source: WardrobeSource): Boolean = source.hasSettings() || Config.get().recolours
+
+    /**
+     * The selected equipped cosmetic's settings: Lunar's own (saved to the account as they change)
+     * and its colour (see [ColourSetting]).
+     */
     @Composable
-    private fun Settings(state: LunarAccount.State, id: Int, busy: Boolean) {
+    private fun Settings(view: View, item: WardrobeSource.Item) {
         val theme = LocalTheme.current
-        val entry = Catalog.get()?.entry(id)
-        val cosmetic = CosmeticOptions.equipped(state, id) ?: return
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             IconButton("left-arrow", 16.dp) { selected = null }
-            Label(entry?.name ?: "#$id", 13.sp, theme.textColor, FontWeight.Medium, maxLines = 1)
+            Label(item.name, 13.sp, theme.textColor, FontWeight.Medium, maxLines = 1)
         }
+        if (item.key == Recolours.BELL_COLLAR_KEY) {
+            val config = Config.get()
+            CheckRow("Wear it", "bell", config.bellCollar) {
+                config.bellCollar = !config.bellCollar
+                Recolours.wearChanged()
+            }
+            CheckRow("Jingle", "jingle", config.bellJingle) {
+                config.bellJingle = !config.bellJingle
+                Recolours.wearChanged()
+            }
+            ColourSetting(item.key)
+            return
+        }
+        val state = view.lunarState
+        val shown = if (item.lunarId >= 0 && state != null) LunarSettings(state, item.lunarId, view.busy) else false
+        if (Config.get().recolours) {
+            ColourSetting(item.key)
+        } else if (!shown) {
+            Label("No settings for this item", 13.sp, theme.textColorSecondary)
+        }
+    }
+
+    /** A checkbox row like the Lunar settings' ones; [id] keys its hover state. */
+    @Composable
+    private fun CheckRow(label: String, id: String, on: Boolean, onToggle: () -> Unit) {
+        val theme = LocalTheme.current
+        val interaction = remember(id) { MutableInteractionSource() }
+        val hovered by interaction.collectIsHoveredAsState()
+        Row(
+            Modifier.fillMaxWidth().onClick(interaction) { onToggle() }.pointerHoverIcon(PointerIcon.Hand),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Box(
+                Modifier.size(16.dp).clip(theme.checkBoxShape)
+                    .then(if (on) Modifier.background(AccentBrush) else Modifier.background(theme.componentBackground))
+                    .border(1.dp, theme.borderColor, theme.checkBoxShape),
+                contentAlignment = Alignment.Center,
+            ) { if (on) Icon("tick", theme.accentTextColor, Modifier.size(10.dp)) }
+            Label(label, 13.sp, if (hovered) theme.textColor else theme.textColorSecondary, maxLines = 1)
+        }
+    }
+
+    /** An equipped Lunar cosmetic's own settings; false if it has none. */
+    @Composable
+    private fun LunarSettings(state: LunarAccount.State, id: Int, busy: Boolean): Boolean {
+        val theme = LocalTheme.current
+        val entry = Catalog.get()?.entry(id)
+        val cosmetic = CosmeticOptions.equipped(state, id) ?: return false
         val flags = CosmeticOptions.flags(entry)
         val height = CosmeticOptions.height(entry)
         if (flags.isEmpty() && height == null) {
-            Label("No settings for this item", 13.sp, theme.textColorSecondary)
-            return
+            return false
         }
         for (flag in flags) {
             val on = flag.get(cosmetic)
@@ -914,6 +984,103 @@ class ComposeWardrobeScreen : ComposeScreen(ComposeScreen.RenderMode.CONTINUOUS)
                 IconButton("refresh", 22.dp, enabled = !busy) { height.reset(cosmetic) }
             }
         }
+        return true
+    }
+
+    /**
+     * The colour you've picked for this cosmetic, which other Clientmetics users see too (see
+     * [Recolours]): a hue bar (click or drag) and a few presets; the refresh button puts its own
+     * colours back. A drag is saved when it ends, so it doesn't make a texture for every hue on the way.
+     */
+    @Composable
+    private fun ColourSetting(key: String) {
+        val theme = LocalTheme.current
+        var saved by remember(key) { mutableStateOf(Recolours.own(key)) }
+        var dragging by remember(key) { mutableStateOf<Float?>(null) }
+        var full by remember(key) { mutableStateOf(false) }
+        fun commit(rgb: Int?) {
+            if (Recolours.setOwn(key, rgb)) {
+                saved = rgb
+                full = false
+            } else {
+                full = true
+            }
+        }
+        val drag = dragging
+        val current = saved
+        val shownHue = drag ?: current?.let { hueOf(it) }
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            Label("Colour", 13.sp, theme.textColorSecondary)
+            Box(
+                Modifier.size(14.dp).clip(theme.checkBoxShape)
+                    .background(
+                        when {
+                            drag != null -> Color.hsv(drag * 360f, 1f, 1f)
+                            current != null -> Color(0xFF000000.toInt() or current)
+                            else -> Color.Transparent
+                        },
+                    )
+                    .border(1.dp, theme.borderColor, theme.checkBoxShape),
+            )
+            Label(if (current == null && drag == null) "Original" else "Custom", 12.sp, theme.textColorSecondary)
+            Spacer(Modifier.weight(1f))
+            IconButton("refresh", 22.dp, enabled = current != null) { commit(null) }
+        }
+        var barWidth by remember { mutableStateOf(1f) }
+        Box(
+            Modifier.fillMaxWidth().height(14.dp).clip(theme.buttonShape)
+                .background(HueBrush)
+                .border(1.dp, theme.borderColor, theme.buttonShape)
+                .onGloballyPositioned { barWidth = it.size.width.toFloat().coerceAtLeast(1f) }
+                .pointerHoverIcon(PointerIcon.Hand)
+                .pointerInput(key) {
+                    detectTapGestures { commit(hueColour(it.x / barWidth)) }
+                }
+                .pointerInput(key) {
+                    detectDragGestures(
+                        onDragStart = { dragging = (it.x / barWidth).coerceIn(0f, 1f) },
+                        onDragEnd = {
+                            dragging?.let { hue -> commit(hueColour(hue)) }
+                            dragging = null
+                        },
+                        onDragCancel = { dragging = null },
+                    ) { change, _ ->
+                        dragging = (change.position.x / barWidth).coerceIn(0f, 1f)
+                        change.consume()
+                    }
+                },
+        ) {
+            if (shownHue != null) {
+                Box(
+                    Modifier.fillMaxHeight().width(3.dp)
+                        .graphicsLayer { translationX = shownHue * (barWidth - 3.dp.toPx()) }
+                        .background(Color.White)
+                        .border(1.dp, Color.Black.copy(alpha = 0.6f)),
+                )
+            }
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            for (preset in ColourPresets) {
+                val interaction = rememberInteractionSource()
+                val hovered by interaction.collectIsHoveredAsState()
+                Box(
+                    Modifier.size(16.dp).clip(theme.checkBoxShape)
+                        .background(Color(0xFF000000.toInt() or preset))
+                        .border(
+                            if (current == preset || hovered) 2.dp else 1.dp,
+                            if (current == preset) theme.textColor else theme.borderColor, theme.checkBoxShape,
+                        )
+                        .onClick(interaction) { commit(preset) }
+                        .pointerHoverIcon(PointerIcon.Hand),
+                )
+            }
+        }
+        val status = Recolours.status()
+        when {
+            full -> Label("You can colour at most ${Recolours.MAX_COLOURS} cosmetics.", 12.sp, theme.textColorSecondary, maxLines = 2)
+            status.isNotEmpty() -> Label(status, 12.sp, theme.textColorSecondary, maxLines = 2)
+            else -> Label("Other Clientmetics users see this colour.", 11.sp, theme.textColorSecondary, maxLines = 2)
+        }
     }
 
     @Composable
@@ -928,6 +1095,17 @@ class ComposeWardrobeScreen : ComposeScreen(ComposeScreen.RenderMode.CONTINUOUS)
         Text(text, modifier, color = color, fontSize = size, fontWeight = weight, maxLines = maxLines, overflow = TextOverflow.Ellipsis)
     }
 }
+
+/** The hue bar: red to red round the colour wheel. */
+private val HueBrush = Brush.horizontalGradient((0..6).map { Color.hsv(it * 60f, 1f, 1f) })
+
+/** Red, orange, yellow, green, cyan, blue, purple, pink, and white (which greys a coloured item out). */
+private val ColourPresets = intArrayOf(0xFF3B3B, 0xFF8C1A, 0xFFD91A, 0x3BD94A, 0x1AD9D9, 0x3B6BFF, 0x9B3BFF, 0xFF3BC4, 0xFFFFFF)
+
+/** A fully saturated colour (RGB) at [hue] (0-1) round the colour wheel. */
+private fun hueColour(hue: Float): Int = java.awt.Color.HSBtoRGB(hue.coerceIn(0f, 1f), 1f, 1f) and 0xFFFFFF
+
+private fun hueOf(rgb: Int): Float = java.awt.Color.RGBtoHSB((rgb shr 16) and 0xFF, (rgb shr 8) and 0xFF, rgb and 0xFF, null)[0]
 
 private fun easeOutExpo(x: Float): Float = if (x >= 1f) 1f else if (x <= 0f) 0f else 1f - Math.pow(2.0, -10.0 * x).toFloat()
 

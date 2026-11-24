@@ -53,15 +53,15 @@ public final class Textures {
     }
 
     private static final class Uploaded {
-        final Kind kind;
+        final String assetKind;
         final String path;
         final Decoded source;
         final ResourceLocation[] frames;
         int uploaded;
         long lastUsed;
 
-        Uploaded(Kind kind, String path, Decoded source) {
-            this.kind = kind;
+        Uploaded(String assetKind, String path, Decoded source) {
+            this.assetKind = assetKind;
             this.path = path;
             this.source = source;
             this.frames = new ResourceLocation[source.frames.length];
@@ -74,7 +74,7 @@ public final class Textures {
                 }
             }
             // The decoded pixels were dropped on upload: forget them so a later use decodes again.
-            Assets.forget("texture-" + kind, path);
+            Assets.forget(assetKind, path);
         }
     }
 
@@ -91,19 +91,45 @@ public final class Textures {
 
     /** Starts decoding a texture without uploading it. Any thread. */
     public static void preload(String path, Kind kind) {
-        Assets.get("texture-" + kind, path, p -> decode(p, kind));
+        preload(path, kind, -1);
+    }
+
+    /** Like {@link #preload(String, Kind)}, recoloured to {@code colour} (RGB; -1 for as-is). */
+    public static void preload(String path, Kind kind, int colour) {
+        Assets.get(assetKind(kind, colour), path, p -> decode(p, kind, colour));
     }
 
     /** The texture's current animation frame, or null if it isn't ready (or doesn't exist). Render thread only. */
     public static ResourceLocation get(String path, Kind kind) {
-        final String key = kind + ":" + path;
+        return get(path, kind, -1);
+    }
+
+    /**
+     * Like {@link #get(String, Kind)}, recoloured to {@code colour} (RGB; -1 for as-is; see
+     * {@link Recolour}). While the recoloured copy is still being made, the normal one is drawn.
+     */
+    public static ResourceLocation get(String path, Kind kind, int colour) {
+        if (colour >= 0) {
+            final ResourceLocation recoloured = upload(path, kind, colour);
+            return recoloured != null ? recoloured : upload(path, kind, -1);
+        }
+        return upload(path, kind, -1);
+    }
+
+    private static String assetKind(Kind kind, int colour) {
+        return colour < 0 ? "texture-" + kind : "texture-" + kind + "#" + Integer.toHexString(colour & 0xFFFFFF);
+    }
+
+    private static ResourceLocation upload(String path, Kind kind, int colour) {
+        final String assetKind = assetKind(kind, colour);
+        final String key = assetKind + ":" + path;
         Uploaded up = UPLOADED.get(key);
         if (up == null) {
-            final Decoded decoded = Assets.get("texture-" + kind, path, p -> decode(p, kind));
+            final Decoded decoded = Assets.get(assetKind, path, p -> decode(p, kind, colour));
             if (decoded == null || decoded.frames.length == 0) {
                 return null;
             }
-            up = new Uploaded(kind, path, decoded);
+            up = new Uploaded(assetKind, path, decoded);
             UPLOADED.put(key, up);
         }
         up.lastUsed = Minecraft.getSystemTime();
@@ -168,7 +194,13 @@ public final class Textures {
         return n;
     }
 
-    private static Decoded decode(String path, Kind kind) throws IOException {
+    private static Decoded decode(String path, Kind kind, int colour) throws IOException {
+        if (colour >= 0 && kind == Kind.MODEL) {
+            final Decoded fromVariants = decodeFromVariants(path, colour);
+            if (fromVariants != null) {
+                return fromVariants;
+            }
+        }
         final BufferedImage image = readImage(path, AssetFiles.read(path));
         int frameW = image.getWidth();
         int frameH = image.getHeight();
@@ -215,7 +247,45 @@ public final class Textures {
         for (int i = 0; i < out.length; i++) {
             out[i] = kind == Kind.CLOAK ? toCapeLayout(frames.get(i)) : copy(frames.get(i), frames.get(i).getWidth(), frames.get(i).getHeight());
         }
+        if (colour >= 0) {
+            Recolour.apply(out, colour);
+        }
         return new Decoded(out, frameTime);
+    }
+
+    /**
+     * An Essential texture recoloured from the cosmetic's own colours (see {@link Recolour#fromVariants}),
+     * or null to recolour it the usual way: it has fewer than two colours, is animated, or its
+     * colours' textures aren't the same size.
+     */
+    private static Decoded decodeFromVariants(String path, int colour) throws IOException {
+        final String[] sources = EssentialFiles.recolourSources(path);
+        if (sources == null) {
+            return null;
+        }
+        final Decoded worn = decode(path, Kind.MODEL, -1);
+        if (worn.frames.length != 1) {
+            return null;
+        }
+        final int w = worn.frames[0].getWidth();
+        final int h = worn.frames[0].getHeight();
+        final BufferedImage[] variants = new BufferedImage[sources.length - 1];
+        for (int i = 1; i < sources.length; i++) {
+            final BufferedImage image = readImage(sources[i], AssetFiles.read(sources[i]));
+            if (image.getWidth() < w || image.getHeight() < h) {
+                return null;
+            }
+            // Cropped like the worn texture (Essential textures can have a particle sheet to the right).
+            variants[i - 1] = copy(image.getSubimage(0, 0, w, h), w, h);
+        }
+        final BufferedImage base = copy(variants[java.util.Arrays.asList(sources).subList(1, sources.length).indexOf(sources[0])], w, h);
+        if (!Recolour.fromVariants(base, variants, colour)) {
+            return null;
+        }
+        if (com.ootruffle.clientmetics.Config.get().debug) {
+            com.ootruffle.clientmetics.Clientmetics.LOGGER.info("Recoloured {} from {} ({} colours)", path, sources[0], variants.length);
+        }
+        return new Decoded(new BufferedImage[]{base}, worn.frameTimeTicks);
     }
 
     private static BufferedImage toCapeLayout(BufferedImage frame) {

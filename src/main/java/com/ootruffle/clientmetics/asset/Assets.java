@@ -71,7 +71,14 @@ public final class Assets {
      * are dropped too, so they're retried later. Returns how many were dropped.
      */
     public static int sweep(String kind, long maxAgeMs, Consumer<Object> dispose) {
-        final String prefix = kind + ":";
+        return sweepPrefix(kind + ":", maxAgeMs, dispose);
+    }
+
+    /**
+     * Like {@link #sweep}, for every entry whose {@code kind:key} starts with {@code prefix} (e.g.
+     * every recoloured copy of a texture kind, whose kinds are {@code texture-MODEL#rrggbb}).
+     */
+    public static int sweepPrefix(String prefix, long maxAgeMs, Consumer<Object> dispose) {
         final long cutoff = System.currentTimeMillis() - maxAgeMs;
         int dropped = 0;
         for (Iterator<Map.Entry<String, CompletableFuture<Object>>> it = CACHE.entrySet().iterator(); it.hasNext(); ) {

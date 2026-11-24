@@ -1,0 +1,11 @@
+{
+  "bell_collar": {
+    "category": "player",
+    "sounds": [
+      { "name": "bell_collar_1", "stream": false },
+      { "name": "bell_collar_2", "stream": false },
+      { "name": "bell_collar_3", "stream": false },
+      { "name": "bell_collar_4", "stream": false }
+    ]
+  }
+}

@@ -30,6 +30,10 @@ public final class DevAutotest {
      * connected once); nothing is sent to Essential.
      */
     private static final boolean ESSENTIAL = DEV && "essential".equals(System.getenv("CLIENTMETICS_AUTOTEST"));
+    /** {@code CLIENTMETICS_AUTOTEST=essential-colour}: Essential cat ears in several colours (see {@link EssentialRecolourAutotest}). */
+    /** {@code CLIENTMETICS_AUTOTEST=collar}: the bell collar (see {@link CollarAutotest}). */
+    private static final boolean COLLAR = DEV && "collar".equals(System.getenv("CLIENTMETICS_AUTOTEST"));
+    private static final boolean ESSENTIAL_COLOUR = DEV && "essential-colour".equals(System.getenv("CLIENTMETICS_AUTOTEST"));
     private static final String[][] DAWN_OUTFITS = {
             {"hat", "wing", "pet", "boot", "cape"},
             {"face", "back", "arm", "aura"},
@@ -50,6 +54,12 @@ public final class DevAutotest {
         }
         if (ESSENTIAL) {
             EssentialAutotest.tick();
+        }
+        if (ESSENTIAL_COLOUR) {
+            EssentialRecolourAutotest.tick();
+        }
+        if (COLLAR) {
+            CollarAutotest.tick();
         }
         if (!ENABLED) {
             return;
@@ -119,6 +129,14 @@ public final class DevAutotest {
                             com.ootruffle.clientmetics.cosmetic.CosmeticOptions.equipped(LunarAccount.state(), mask);
                     Clientmetics.LOGGER.info("[autotest] mask {}: showOverHelmet={} height={} (range {})", entry.name,
                             after.showOverHelmet, after.hatHeightOffset, height == null ? "none" : height.min + ".." + height.max);
+                    // Colours: blue cloak, green mask, pink pet (put back in step 4).
+                    final int[] colours = {0x3B6BFF, 0x3BD94A, 0xFF3BC4};
+                    int i = 0;
+                    for (com.ootruffle.clientmetics.cosmetic.EquippedCosmetic c : state.equipped) {
+                        com.ootruffle.clientmetics.cosmetic.Recolours.setOwn("lunar:" + c.id, colours[i++ % colours.length]);
+                        Clientmetics.LOGGER.info("[autotest] coloured {} ({}): {}", catalog.entry(c.id).name, catalog.entry(c.id).category,
+                                Integer.toHexString(com.ootruffle.clientmetics.cosmetic.Recolours.colour(mc.thePlayer.getUniqueID(), "lunar:" + c.id)));
+                    }
                 }
                 next();
                 break;
@@ -126,6 +144,9 @@ public final class DevAutotest {
             case 4:
                 if (ticks > 40) {
                     screenshot(mc, "clientmetics-wardrobe-settings.png");
+                    for (com.ootruffle.clientmetics.cosmetic.EquippedCosmetic c : LunarAccount.state().equipped) {
+                        com.ootruffle.clientmetics.cosmetic.Recolours.setOwn("lunar:" + c.id, null);
+                    }
                     // Memory: free everything, then check it all loads and draws again.
                     final int before = com.ootruffle.clientmetics.asset.Textures.uploadedFrames();
                     com.ootruffle.clientmetics.asset.MemoryJanitor.sweepAll();

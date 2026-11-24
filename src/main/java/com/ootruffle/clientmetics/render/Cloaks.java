@@ -9,6 +9,7 @@ import com.ootruffle.clientmetics.asset.EssentialCatalog;
 import com.ootruffle.clientmetics.asset.Textures;
 import com.ootruffle.clientmetics.cosmetic.EquippedCosmetic;
 import com.ootruffle.clientmetics.cosmetic.EssentialSnapshot;
+import com.ootruffle.clientmetics.cosmetic.Recolours;
 import com.ootruffle.clientmetics.model.GeoCosmetic;
 import java.util.UUID;
 import net.minecraft.util.ResourceLocation;
@@ -36,7 +37,7 @@ public final class Cloaks {
             for (EquippedCosmetic cosmetic : PreviewRenderer.outfitFor(uuid)) {
                 final Catalog.Entry entry = catalog.entry(cosmetic.id);
                 if (entry != null && "cloak".equals(entry.category)) {
-                    return Textures.get(entry.resource, Textures.Kind.CLOAK);
+                    return Textures.get(entry.resource, Textures.Kind.CLOAK, Recolours.colour(uuid, "lunar:" + cosmetic.id));
                 }
             }
         }
@@ -46,12 +47,17 @@ public final class Cloaks {
             for (String slug : dawn) {
                 final DawnCatalog.Entry entry = dawnCatalog.entry(slug);
                 if (entry != null && "cape".equals(entry.type) && entry.hasReadableTexture()) {
-                    return Textures.get(DawnFiles.PREFIX + entry.texture, Textures.Kind.CLOAK);
+                    return Textures.get(DawnFiles.PREFIX + entry.texture, Textures.Kind.CLOAK,
+                            Recolours.colour(uuid, "dawn:" + slug));
                 }
             }
         }
         final String essential = essentialCapeTexture(uuid);
-        return essential == null ? null : Textures.get(essential, Textures.Kind.CLOAK);
+        if (essential == null) {
+            return null;
+        }
+        final EssentialCatalog.Entry cape = essentialCape(PreviewRenderer.essentialOutfitFor(uuid));
+        return Textures.get(essential, Textures.Kind.CLOAK, cape == null ? -1 : Recolours.colour(uuid, "essential:" + cape.id));
     }
 
     /** The equipped Essential CAPE-slot cosmetic (which may be a Minecraft cape or "Cape Disabled"), or null. */

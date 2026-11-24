@@ -42,6 +42,11 @@ public abstract class WardrobeSource {
         /** The Essential id, or null for Lunar and Dawn. */
         public final String essentialId;
 
+        /** One of this mod's own cosmetics (the bell collar): no card, only its settings. */
+        public static Item extra(String key, String name) {
+            return new Item(key, name, "", true, true, -1, null, null);
+        }
+
         Item(String key, String name, String category, boolean equipped, boolean drawable, int lunarId, String dawnSlug) {
             this(key, name, category, equipped, drawable, lunarId, dawnSlug, null);
         }

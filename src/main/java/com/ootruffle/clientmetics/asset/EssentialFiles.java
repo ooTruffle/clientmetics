@@ -128,15 +128,37 @@ public final class EssentialFiles {
      * Blocking (may download settings.json); worker threads only.
      */
     public static String defaultVariant(EssentialCatalog.Entry entry) {
+        final java.util.List<Variant> variants = variants(entry);
+        return variants.isEmpty() ? "" : variants.get(0).name;
+    }
+
+    /** One of a cosmetic's colours, from its {@code VARIANTS} setting. */
+    public static final class Variant {
+        public final String name;
+        /** The colour Essential shows for it (RGB), or -1 if it doesn't say. */
+        public final int color;
+
+        Variant(String name, int color) {
+            this.name = name;
+            this.color = color;
+        }
+    }
+
+    /**
+     * The colours a cosmetic comes in, in the order its {@code settings.json} lists them (the first
+     * is the default); empty if it has none. Blocking (may download settings.json); worker threads only.
+     */
+    public static java.util.List<Variant> variants(EssentialCatalog.Entry entry) {
+        final java.util.List<Variant> out = new java.util.ArrayList<>();
         final String settings = entry == null ? null : entry.settings();
         if (settings == null) {
-            return "";
+            return out;
         }
         try {
             final JsonElement parsed = new JsonParser().parse(new String(
                     read(PREFIX + entry.id + "/" + settings), StandardCharsets.UTF_8));
             if (!parsed.isJsonArray()) {
-                return "";
+                return out;
             }
             for (JsonElement element : parsed.getAsJsonArray()) {
                 if (!element.isJsonObject()) {
@@ -154,18 +176,73 @@ public final class EssentialFiles {
                     continue;
                 }
                 for (JsonElement variant : variants.getAsJsonArray()) {
-                    final JsonElement name = variant.isJsonObject() ? variant.getAsJsonObject().get("name") : null;
+                    if (!variant.isJsonObject()) {
+                        continue;
+                    }
+                    final JsonElement name = variant.getAsJsonObject().get("name");
+                    final JsonElement color = variant.getAsJsonObject().get("color");
                     if (name != null && name.isJsonPrimitive() && !name.getAsString().isEmpty()) {
-                        return name.getAsString();
+                        out.add(new Variant(name.getAsString(), color != null && color.isJsonPrimitive()
+                                && color.getAsJsonPrimitive().isNumber() ? color.getAsInt() & 0xFFFFFF : -1));
                     }
                 }
+                break;
             }
         } catch (IOException | RuntimeException e) {
             if (Config.get().debug) {
-                Clientmetics.LOGGER.info("Couldn't read Essential default variant for {}: {}", entry.id, e.toString());
+                Clientmetics.LOGGER.info("Couldn't read Essential variants for {}: {}", entry.id, e.toString());
             }
         }
-        return "";
+        return out;
+    }
+
+    /**
+     * For recolouring an Essential texture (see {@link Recolour}): the texture of the cosmetic's
+     * brightest, most saturated colour to start from, then every colour's texture (to tell the parts
+     * that change colour from the ones that don't). Null if the cosmetic has fewer than two
+     * colours with their own texture. Blocking; worker threads only.
+     */
+    public static String[] recolourSources(String texturePath) {
+        if (texturePath == null || !handles(texturePath)) {
+            return null;
+        }
+        final String rest = texturePath.substring(PREFIX.length());
+        final int slash = rest.indexOf('/');
+        final EssentialCatalog.Entry entry = slash < 0 ? null : entry(rest.substring(0, slash));
+        if (entry == null) {
+            return null;
+        }
+        final java.util.List<String> paths = new java.util.ArrayList<>();
+        String base = null;
+        float bestScore = -1;
+        for (Variant variant : variants(entry)) {
+            final String wanted = "variants/" + variant.name.toLowerCase(Locale.ROOT) + "/texture.png";
+            String file = null;
+            for (String path : entry.files.keySet()) {
+                if (path.toLowerCase(Locale.ROOT).equals(wanted)) {
+                    file = path;
+                }
+            }
+            if (file == null) {
+                continue;
+            }
+            final String prefixed = PREFIX + entry.id + "/" + file;
+            paths.add(prefixed);
+            if (variant.color >= 0) {
+                final float[] hsb = java.awt.Color.RGBtoHSB((variant.color >> 16) & 0xFF, (variant.color >> 8) & 0xFF,
+                        variant.color & 0xFF, null);
+                final float score = hsb[1] * hsb[2];
+                if (score > bestScore) {
+                    bestScore = score;
+                    base = prefixed;
+                }
+            }
+        }
+        if (paths.size() < 2) {
+            return null;
+        }
+        paths.add(0, base != null ? base : paths.get(0));
+        return paths.toArray(new String[0]);
     }
 
     /** Like {@link #texturePath} but never downloads: null unless the file is already on disk. */
