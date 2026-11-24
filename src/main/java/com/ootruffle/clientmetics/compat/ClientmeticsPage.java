@@ -51,6 +51,10 @@ public final class ClientmeticsPage extends org.polyfrost.oneconfig.api.config.v
     @Slider(title = "Max Players", description = "How many of the nearest players get cosmetics.", min = 10, max = 500, step = 10, subcategory = "General")
     public int maxPlayers = 200;
 
+    @Slider(title = "Bell Collar Volume", description = "How loud bell collars jingle for you (yours and other players'). 0 mutes them. Only affects what you hear.",
+            min = 0, max = 100, step = 5, subcategory = "General")
+    public int bellVolume = 100;
+
     @Switch(title = "Cloaks", subcategory = "Cosmetic Types")
     public boolean showCloaks = true;
 
@@ -129,6 +133,7 @@ public final class ClientmeticsPage extends org.polyfrost.oneconfig.api.config.v
                 || c.essential != INSTANCE.essential
                 || c.recolours != INSTANCE.recolours
                 || c.maxPlayers != INSTANCE.maxPlayers
+                || c.bellVolume != INSTANCE.bellVolume
                 || c.showCloaks != INSTANCE.showCloaks
                 || c.showHats != INSTANCE.showHats
                 || c.showBodywear != INSTANCE.showBodywear
@@ -146,6 +151,7 @@ public final class ClientmeticsPage extends org.polyfrost.oneconfig.api.config.v
         c.essential = INSTANCE.essential;
         c.recolours = INSTANCE.recolours;
         c.maxPlayers = INSTANCE.maxPlayers;
+        c.bellVolume = INSTANCE.bellVolume;
         c.showCloaks = INSTANCE.showCloaks;
         c.showHats = INSTANCE.showHats;
         c.showBodywear = INSTANCE.showBodywear;
@@ -182,6 +188,7 @@ public final class ClientmeticsPage extends org.polyfrost.oneconfig.api.config.v
         essential = c.essential;
         recolours = c.recolours;
         maxPlayers = c.maxPlayers;
+        bellVolume = c.bellVolume;
         showCloaks = c.showCloaks;
         showHats = c.showHats;
         showBodywear = c.showBodywear;

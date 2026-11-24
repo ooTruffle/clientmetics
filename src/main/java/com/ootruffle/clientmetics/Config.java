@@ -50,6 +50,11 @@ public final class Config {
     public boolean bellCollar = true;
     /** Your bell collar jingles as it swings, for everyone who sees it. */
     public boolean bellJingle = true;
+    /**
+     * How loud bell collars jingle for you, 0-100 (0 mutes them). Only on this client: it changes
+     * what you hear, not whether yours jingles for others (that's {@link #bellJingle}).
+     */
+    public int bellVolume = 100;
     /** The extras the colour server last said you may wear, so they show in singleplayer too. */
     public java.util.List<String> grantedExtras = new java.util.ArrayList<>();
     /** Show your own equipped cosmetics in third person. */
