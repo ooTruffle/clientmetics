@@ -116,6 +116,21 @@ final class EssentialAutotest {
                     Clientmetics.LOGGER.info("[autotest] Essential outfit {}: {}", outfit + 1, snapshot.equipped);
                     checkCape(self, outfit);
                 }
+            } else if (back && outfit == HOODIE_OUTFIT && ticks > wait + 160) {
+                if (ticks == wait + 161) {
+                    checkWorn(mc.thePlayer, outfit);
+                    DevAutotest.screenshot(mc, "clientmetics-essential-" + (outfit + 1) + "-back.png");
+                    // Then the hoodie's sleeve on the first-person arm.
+                    mc.gameSettings.thirdPersonView = 0;
+                    mc.gameSettings.hideGUI = false; // Hiding the GUI hides the hand too.
+                    firstPersonBefore = com.ootruffle.clientmetics.render.CosmeticRenderer.firstPersonBones;
+                } else if (ticks > wait + 200) {
+                    check("Hoodie's sleeve is drawn on the first-person arm",
+                            com.ootruffle.clientmetics.render.CosmeticRenderer.firstPersonBones > firstPersonBefore);
+                    DevAutotest.screenshot(mc, "clientmetics-essential-" + (outfit + 1) + "-first-person.png");
+                    mc.gameSettings.hideGUI = true;
+                    next();
+                }
             } else if (ticks > wait + 160) {
                 if (back) {
                     checkWorn(mc.thePlayer, outfit);
@@ -266,6 +281,10 @@ final class EssentialAutotest {
         check("Default colour texture for " + ok + " cached cosmetics", bad == 0 && ok > 0);
     }
 
+    /** The outfit in OUTFITS with the hoodie, also shot in first person. */
+    private static final int HOODIE_OUTFIT = 2;
+    private static int firstPersonBefore;
+
     private static volatile boolean loadAllDone;
 
     /** Outfits worn next to the Feminine Gender Mod and 3D Skin Layers: none, torso-covering, legs only. */
@@ -369,7 +388,8 @@ final class EssentialAutotest {
                 }
                 break;
             case 1:
-                check("compat: hoodie hides the jacket layer (3D Skin Layers' too)", !jacket);
+                check("compat: hoodie keeps the jacket layer worn (3D Skin Layers draws it from the masked skin)", jacket);
+                checkMaskedSkin(player, "HOODIE");
                 if (gender) {
                     final com.ootruffle.clientmetics.model.GeoCosmetic cover =
                             com.ootruffle.clientmetics.compat.FeminineGenderCompat.coverFor(player);
@@ -606,32 +626,84 @@ final class EssentialAutotest {
         }
     }
 
-    /** In the world: the cape goes through the vanilla layer, and covered skin layers read as not worn. */
+    /** In the world: the cape goes through the vanilla layer, and clothing masks the skin pixel by pixel. */
     private static void checkWorn(net.minecraft.client.entity.EntityPlayerSP player, int outfit) {
         final UUID self = player.getUniqueID();
         switch (outfit) {
             case 0: // Skirt, glasses, Discord cape.
                 check("Discord cape is the vanilla cape texture", Cloaks.capeFor(self) != null
                         && Cloaks.capeFor(self).equals(player.getLocationCape()));
-                check("Skirt hides the trouser layers", !player.isWearing(net.minecraft.entity.player.EnumPlayerModelParts.LEFT_PANTS_LEG)
-                        && !player.isWearing(net.minecraft.entity.player.EnumPlayerModelParts.RIGHT_PANTS_LEG));
-                check("Skirt leaves the jacket layer", player.isWearing(net.minecraft.entity.player.EnumPlayerModelParts.JACKET));
+                check("Skirt keeps the trouser and jacket layers worn",
+                        player.isWearing(net.minecraft.entity.player.EnumPlayerModelParts.LEFT_PANTS_LEG)
+                                && player.isWearing(net.minecraft.entity.player.EnumPlayerModelParts.RIGHT_PANTS_LEG)
+                                && player.isWearing(net.minecraft.entity.player.EnumPlayerModelParts.JACKET));
+                checkMaskedSkin(player, "SKIRT");
                 break;
             case 1: // Skirt, cat ears, Cape Disabled.
                 check("Cape Disabled: no cape texture", player.getLocationCape() == null);
                 break;
             case 2: // Hoodie, Minecraft cape.
-                check("Hoodie hides the jacket and sleeve layers",
-                        !player.isWearing(net.minecraft.entity.player.EnumPlayerModelParts.JACKET)
-                                && !player.isWearing(net.minecraft.entity.player.EnumPlayerModelParts.LEFT_SLEEVE)
-                                && !player.isWearing(net.minecraft.entity.player.EnumPlayerModelParts.RIGHT_SLEEVE));
-                check("Hoodie leaves the hat and trouser layers",
-                        player.isWearing(net.minecraft.entity.player.EnumPlayerModelParts.HAT)
-                                && player.isWearing(net.minecraft.entity.player.EnumPlayerModelParts.LEFT_PANTS_LEG));
+                check("Hoodie keeps the jacket and sleeve layers worn",
+                        player.isWearing(net.minecraft.entity.player.EnumPlayerModelParts.JACKET)
+                                && player.isWearing(net.minecraft.entity.player.EnumPlayerModelParts.LEFT_SLEEVE)
+                                && player.isWearing(net.minecraft.entity.player.EnumPlayerModelParts.RIGHT_SLEEVE));
+                checkMaskedSkin(player, "HOODIE");
                 break;
             default:
                 break;
         }
+    }
+
+    /**
+     * The player's skin is a masked copy (see MaskedSkins): every pixel {@code id}'s mask hides is
+     * cleared, every pixel no worn mask hides is the skin's own, and 3D Skin Layers can read it.
+     */
+    private static void checkMaskedSkin(net.minecraft.client.entity.AbstractClientPlayer player, String id) {
+        final net.minecraft.util.ResourceLocation skin = player.getLocationSkin();
+        final java.awt.image.BufferedImage[] images = com.ootruffle.clientmetics.render.MaskedSkins.imagesOf(skin);
+        check(id + ": the skin is drawn from a masked copy (" + skin + ")", images != null);
+        if (images == null) {
+            return;
+        }
+        check(id + ": the masked copy is a downloaded-skin texture (what 3D Skin Layers reads)",
+                Minecraft.getMinecraft().getTextureManager().getTexture(skin) instanceof net.minecraft.client.renderer.ThreadDownloadImageData);
+        final long[] own;
+        try {
+            final com.ootruffle.clientmetics.model.GeoCosmetic geo = com.ootruffle.clientmetics.model.GeoCosmetic.load(
+                    com.ootruffle.clientmetics.model.GeoCosmetic.essentialKey(id, ""));
+            own = "slim".equals(player.getSkinType()) ? geo.skinMaskAlex : geo.skinMaskSteve;
+        } catch (Exception e) {
+            check(id + " mask: " + e, false);
+            return;
+        }
+        final long[] all = com.ootruffle.clientmetics.render.CosmeticRenderer.skinMask(player);
+        final java.awt.image.BufferedImage source = images[0];
+        final java.awt.image.BufferedImage masked = images[1];
+        final int s = source.getWidth() / 64;
+        int cleared = 0;
+        int wrong = 0;
+        int kept = 0;
+        for (int y = 0; y < 64 && y * s < source.getHeight(); y++) {
+            for (int x = 0; x < 64; x++) {
+                final int was = source.getRGB(x * s, y * s);
+                final int now = masked.getRGB(x * s, y * s);
+                if (com.ootruffle.clientmetics.model.SkinCover.hides(own, x, y)) {
+                    if (now >>> 24 == 0) {
+                        cleared++;
+                    } else {
+                        wrong++;
+                    }
+                } else if (!com.ootruffle.clientmetics.model.SkinCover.hides(all, x, y)) {
+                    if (now == was) {
+                        kept++;
+                    } else {
+                        wrong++;
+                    }
+                }
+            }
+        }
+        check(id + ": masked copy clears the " + cleared + " pixels it covers and keeps the other " + kept
+                + " (" + wrong + " wrong)", wrong == 0 && cleared > 0 && kept > 0);
     }
 
     /** Whether the vanilla cape is hidden for each outfit. */

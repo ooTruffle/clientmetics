@@ -75,6 +75,9 @@ public final class GeoCosmetic {
     /** Essential: outer skin layers this cosmetic covers ({@link SkinCover} bits), for wide and slim arms. */
     public volatile int skinCoverSteve;
     public volatile int skinCoverAlex;
+    /** Essential: the outer-layer pixels it hides ({@link SkinCover.Mask#hidden}), for wide and slim arms, or null. */
+    public volatile long[] skinMaskSteve;
+    public volatile long[] skinMaskAlex;
 
     private GeoCosmetic(String type, String attachedBone, String texturePath, List<GeoModel> models, List<Molang.Expr> modelConditions,
                         Map<String, GeoAnimation> animations, List<State> states, Map<String, Double> options) {
@@ -301,9 +304,13 @@ public final class GeoCosmetic {
         // Which outer skin layers it covers; a cosmetic without a slim mask uses the wide one.
         final String steve = entry.files.containsKey("skin_mask.steve.png") ? "skin_mask.steve.png" : null;
         final String alex = entry.files.containsKey("skin_mask.alex.png") ? "skin_mask.alex.png" : steve;
-        geo.skinCoverSteve = steve == null ? 0 : SkinCover.read(EssentialFiles.PREFIX + id + "/" + steve);
-        geo.skinCoverAlex = alex == null ? 0 : alex.equals(steve) ? geo.skinCoverSteve
+        final SkinCover.Mask steveMask = steve == null ? SkinCover.NONE : SkinCover.read(EssentialFiles.PREFIX + id + "/" + steve);
+        final SkinCover.Mask alexMask = alex == null ? SkinCover.NONE : alex.equals(steve) ? steveMask
                 : SkinCover.read(EssentialFiles.PREFIX + id + "/" + alex);
+        geo.skinCoverSteve = steveMask.parts;
+        geo.skinCoverAlex = alexMask.parts;
+        geo.skinMaskSteve = steveMask.hidden;
+        geo.skinMaskAlex = alexMask.hidden;
         readBoneHiding(entry, geo);
         geo.torsoFront = torsoFront(json(EssentialFiles.PREFIX + id + "/" + geometries.get(0)));
         return geo;

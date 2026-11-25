@@ -60,6 +60,14 @@ public final class GeoModel {
         default boolean skip(Bone bone) {
             return false;
         }
+
+        /**
+         * Whether this bone's cubes, and everything under it, are drawn. A bone that isn't still
+         * moves its children, so a subtree can be drawn on its own (an arm in first person).
+         */
+        default boolean draws(Bone bone) {
+            return true;
+        }
     }
 
     public final float textureWidth;
@@ -127,14 +135,15 @@ public final class GeoModel {
 
     public void render(BoneHook hook) {
         for (Bone bone : roots) {
-            renderBone(bone, hook);
+            renderBone(bone, hook, false);
         }
     }
 
-    private void renderBone(Bone bone, BoneHook hook) {
+    private void renderBone(Bone bone, BoneHook hook, boolean parentDrawn) {
         if (hook.skip(bone)) {
             return;
         }
+        final boolean drawn = parentDrawn || hook.draws(bone);
         GlStateManager.pushMatrix();
         hook.beforeBone(bone);
         final GeoAnimation.Pose pose = hook.pose(bone);
@@ -163,14 +172,14 @@ public final class GeoModel {
         GlStateManager.translate(-bone.pivot[0], -bone.pivot[1], -bone.pivot[2]);
         final boolean hidden = pose != null && pose.scale[0] == 0 && pose.scale[1] == 0 && pose.scale[2] == 0;
         if (!hidden) {
-            if (!bone.quads.isEmpty()) {
+            if (drawn && !bone.quads.isEmpty()) {
                 if (bone.displayList < 0) {
                     bone.displayList = compile(bone);
                 }
                 GlStateManager.callList(bone.displayList);
             }
             for (Bone child : bone.children) {
-                renderBone(child, hook);
+                renderBone(child, hook, drawn);
             }
         }
         GlStateManager.popMatrix();

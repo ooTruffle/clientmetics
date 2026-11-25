@@ -175,22 +175,50 @@ public final class CosmeticRenderer implements LayerRenderer<AbstractClientPlaye
     }
 
     /**
-     * Whether an Essential cosmetic this player is wearing covers this outer skin layer (see
-     * {@link com.ootruffle.clientmetics.model.SkinCover}), so the layer should be hidden. Only
+     * Whether an Essential cosmetic this player is wearing covers this outer skin layer part (at
+     * least {@code SkinCover.THRESHOLD} of it, see {@link com.ootruffle.clientmetics.model.SkinCover}). Only
      * cosmetics that are actually drawn count: their type is shown, they've loaded, and armour
      * isn't hiding them. Render thread.
      */
     public static boolean coversSkinLayer(AbstractClientPlayer player, int bit) {
-        final Config config = Config.get();
-        if (bit == 0 || !config.enabled || !config.essentialOn() || player.isInvisible()) {
+        if (bit == 0) {
             return false;
+        }
+        final boolean slim = "slim".equals(player.getSkinType());
+        for (GeoCosmetic geo : maskingCosmetics(player)) {
+            if (((slim ? geo.skinCoverAlex : geo.skinCoverSteve) & bit) != 0) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * The outer skin layer pixels hidden by the Essential cosmetics this player wears, as
+     * {@link com.ootruffle.clientmetics.model.SkinCover} rows, or null if none are. The same
+     * cosmetics count as for {@link #coversSkinLayer}. Render thread.
+     */
+    public static long[] skinMask(AbstractClientPlayer player) {
+        final boolean slim = "slim".equals(player.getSkinType());
+        long[] hidden = null;
+        for (GeoCosmetic geo : maskingCosmetics(player)) {
+            hidden = com.ootruffle.clientmetics.model.SkinCover.union(hidden, slim ? geo.skinMaskAlex : geo.skinMaskSteve);
+        }
+        return hidden;
+    }
+
+    /** The worn Essential cosmetics that are drawn and ship a skin mask: type shown, loaded, not hidden by armour. */
+    private static List<GeoCosmetic> maskingCosmetics(AbstractClientPlayer player) {
+        final Config config = Config.get();
+        if (!config.enabled || !config.essentialOn() || player.isInvisible()) {
+            return java.util.Collections.emptyList();
         }
         final EssentialSnapshot snapshot = PreviewRenderer.essentialOutfitFor(player.getUniqueID());
         final EssentialCatalog catalog = snapshot == null ? null : EssentialCatalog.get();
         if (catalog == null) {
-            return false;
+            return java.util.Collections.emptyList();
         }
-        final boolean slim = "slim".equals(player.getSkinType());
+        List<GeoCosmetic> out = null;
         for (String cosmeticId : snapshot.equipped.values()) {
             final EssentialCatalog.Entry entry = catalog.entry(cosmeticId);
             if (!EssentialCatalog.isWearable(entry) || "CAPE".equals(entry.type) || !essentialTypeShown(entry.type, config)) {
@@ -198,14 +226,16 @@ public final class CosmeticRenderer implements LayerRenderer<AbstractClientPlaye
             }
             final GeoCosmetic geo = Assets.get("geo", GeoCosmetic.essentialKey(entry.id, snapshot.variantOf(entry.id)),
                     GeoCosmetic::load);
-            if (geo == null || ((slim ? geo.skinCoverAlex : geo.skinCoverSteve) & bit) == 0) {
+            if (geo == null || (geo.skinMaskSteve == null && geo.skinMaskAlex == null)
+                    || hiddenByArmor(player, geo.hiddenByArmor)) {
                 continue;
             }
-            if (!hiddenByArmor(player, geo.hiddenByArmor)) {
-                return true;
+            if (out == null) {
+                out = new java.util.ArrayList<>(2);
             }
+            out.add(geo);
         }
-        return false;
+        return out == null ? java.util.Collections.<GeoCosmetic>emptyList() : out;
     }
 
     /**
@@ -332,7 +362,7 @@ public final class CosmeticRenderer implements LayerRenderer<AbstractClientPlaye
                     if (scope == null) {
                         scope = scope(player, limbSwing, limbSwingAmount, partialTicks, netHeadYaw, headPitch);
                     }
-                    renderGeo(player, model, geo(entry), cosmetic, scope, null, null, "lunar:" + cosmetic.id);
+                    renderGeo(player, model, geo(entry), cosmetic, scope, null, null, "lunar:" + cosmetic.id, null);
                 }
             } else {
                 renderObj(player, model, catalog, entry, cosmetic);
@@ -348,7 +378,7 @@ public final class CosmeticRenderer implements LayerRenderer<AbstractClientPlaye
                     scope = scope(player, limbSwing, limbSwingAmount, partialTicks, netHeadYaw, headPitch);
                 }
                 renderGeo(player, model, Assets.get("geo", GeoCosmetic.dawnKey(slug), GeoCosmetic::load), null, scope, null, null,
-                        "dawn:" + slug);
+                        "dawn:" + slug, null);
             }
         }
         if (essential != null) {
@@ -373,10 +403,62 @@ public final class CosmeticRenderer implements LayerRenderer<AbstractClientPlaye
                 GlStateManager.enablePolygonOffset();
                 GlStateManager.doPolygonOffset(-1.0F, -10.0F);
                 renderGeo(player, model, geo, null, scope, essential.positionAdjustment(entry.id),
-                        hiddenBones(essential, entry.id, geo), "essential:" + entry.id);
+                        hiddenBones(essential, entry.id, geo), "essential:" + entry.id, null);
                 GlStateManager.doPolygonOffset(0.0F, 0.0F);
                 GlStateManager.disablePolygonOffset();
             }
+        }
+        GlStateManager.color(1, 1, 1, 1);
+        GlStateManager.disableBlend();
+    }
+
+    /** Arm bones drawn in first person so far (dev autotest). */
+    public static volatile int firstPersonBones;
+
+    /**
+     * Draws the Essential cosmetics' parts that follow an arm (a shirt's sleeve, gloves, bracelets)
+     * on the first-person arm, after {@link RenderPlayer#renderRightArm} or {@code renderLeftArm}
+     * has drawn it. Those leave the model posed for first person and the matrix in the player
+     * model's space, as in the world, so the arm bones line up the same way. Render thread.
+     */
+    public static void renderFirstPersonArm(RenderPlayer renderer, AbstractClientPlayer player, boolean right,
+                                            float partialTicks) {
+        final Config config = Config.get();
+        if (!config.enabled || !config.essentialOn() || player.isInvisible()
+                || player == Minecraft.getMinecraft().thePlayer && !config.showOwn) {
+            return;
+        }
+        final EssentialCatalog catalog = EssentialCatalog.get();
+        final EssentialSnapshot essential = catalog == null ? null : PreviewRenderer.essentialOutfitFor(player.getUniqueID());
+        if (essential == null || essential.equipped.isEmpty()) {
+            return;
+        }
+        final ModelPlayer model = renderer.getMainModel();
+        final Part arm = right ? Part.RIGHT_ARM : Part.LEFT_ARM;
+        Molang.Scope scope = null;
+        GlStateManager.enableBlend();
+        GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0);
+        GlStateManager.color(1, 1, 1, 1);
+        for (String cosmeticId : essential.equipped.values()) {
+            final EssentialCatalog.Entry entry = catalog.entry(cosmeticId);
+            if (!EssentialCatalog.isWearable(entry) || "CAPE".equals(entry.type) || !essentialTypeShown(entry.type, config)) {
+                continue;
+            }
+            final GeoCosmetic geo = Assets.get("geo", GeoCosmetic.essentialKey(entry.id, essential.variantOf(entry.id)),
+                    GeoCosmetic::load);
+            if (geo == null) {
+                continue;
+            }
+            if (scope == null) {
+                scope = scope(player, 0, 0, partialTicks, 0, 0);
+            }
+            // As in the world: the sleeve sits on the arm's own surface, so pull it towards the camera.
+            GlStateManager.enablePolygonOffset();
+            GlStateManager.doPolygonOffset(-1.0F, -10.0F);
+            renderGeo(player, model, geo, null, scope, essential.positionAdjustment(entry.id),
+                    hiddenBones(essential, entry.id, geo), "essential:" + entry.id, arm);
+            GlStateManager.doPolygonOffset(0.0F, 0.0F);
+            GlStateManager.disablePolygonOffset();
         }
         GlStateManager.color(1, 1, 1, 1);
         GlStateManager.disableBlend();
@@ -551,7 +633,7 @@ public final class CosmeticRenderer implements LayerRenderer<AbstractClientPlaye
      */
     private static void renderGeo(AbstractClientPlayer player, ModelPlayer model, GeoCosmetic geo,
                                   EquippedCosmetic cosmetic, Molang.Scope scope, float[] adjustment,
-                                  java.util.Set<String> hiddenBones, String key) {
+                                  java.util.Set<String> hiddenBones, String key, Part only) {
         if (geo == null || geo.isEmptyModel()) {
             return; // Particle-only effects: nothing to draw, so don't upload their particle sheets.
         }
@@ -568,13 +650,16 @@ public final class CosmeticRenderer implements LayerRenderer<AbstractClientPlaye
         final double animTime = scope.get("query.anim_time");
         final Part rootPart = "HEAD".equalsIgnoreCase(geo.attachedBone) ? Part.HEAD
                 : "SHOULDER".equalsIgnoreCase(geo.attachedBone) ? Part.BODY : null;
+        if (only != null && (geo.anchored || rootPart != null)) {
+            return; // Drawn whole on the head or body: nothing of it follows an arm.
+        }
 
         Minecraft.getMinecraft().getTextureManager().bindTexture(texture);
         GlStateManager.pushMatrix();
         // Undo the player renderer's flip: feet at the origin, Y up, X un-mirrored.
         GlStateManager.translate(0, MODEL_ORIGIN, 0);
         GlStateManager.scale(-1, -1, 1);
-        if (player.isSneaking()) {
+        if (player.isSneaking() && only == null) { // The first-person arm never sneaks.
             GlStateManager.translate(0, -SNEAK_DROP, 0);
         }
         if (adjustment != null) {
@@ -611,6 +696,18 @@ public final class CosmeticRenderer implements LayerRenderer<AbstractClientPlaye
             @Override
             public boolean skip(GeoModel.Bone bone) {
                 return hiddenBones != null && hiddenBones.contains(bone.name.toLowerCase(Locale.ROOT));
+            }
+
+            @Override
+            public boolean draws(GeoModel.Bone bone) {
+                if (only == null) {
+                    return true;
+                }
+                if (partFor(bone.name) == only) {
+                    firstPersonBones++;
+                    return true;
+                }
+                return false;
             }
 
             @Override

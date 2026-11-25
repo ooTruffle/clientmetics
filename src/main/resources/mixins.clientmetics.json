@@ -8,12 +8,14 @@
   "client": [
     "AbstractClientPlayerMixin",
     "AbstractClientPlayerPreviewMixin",
-    "EntityPlayerSkinCoverMixin",
+    "AbstractClientPlayerSkinMixin",
     "EntityPlayerSPMixin",
     "FeminineGenderLayerMixin",
     "MinecraftMixin",
+    "MinecraftTimerAccessor",
     "RendererLivingEntityAccessor",
     "RenderMixin",
+    "RenderPlayerArmMixin",
     "RenderPlayerMixin"
   ]
 }
