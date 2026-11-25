@@ -130,12 +130,18 @@ own player immediately, without waiting for Essential to echo it back.
 - `animations.json` plays the `IDLE` trigger's animation (or the loop it hands over to). Emote and
   random-tick triggers, emissive textures and particles aren't supported; particle-only effects draw nothing.
 - Essential's `arm_right`/`arm_left`/`leg_right`/`leg_left` bones follow the player's limbs.
+- In first person, what of an Essential cosmetic hangs off an arm bone (a shirt's sleeve, gloves,
+  bracelets) is drawn on the first-person arm too (the left arm shows when holding a map). Cosmetics
+  attached whole to the head or body aren't, and the arm keeps first person's fixed pose.
 - Essential capes all use the vanilla cape box and layout, so they're drawn by the vanilla cape layer
   (animated ones frame by frame): they swing like capes and cape mods such as WaveyCapes draw them.
-- Essential's skin masks (`skin_mask.*.png`) say which skin pixels clothing hides. A whole outer
-  layer part (hat, jacket, a sleeve, a trouser leg) is hidden when the worn cosmetic's mask covers at
-  least 35% of it, by reporting that part as not worn. Vanilla, 3D Skin Layers and the Feminine Gender
-  Mod's overlay all respect that, so those layers stop poking through clothes and z-fighting.
+- Essential's skin masks (`skin_mask.*.png`) say which skin pixels clothing hides. As Essential does,
+  only those pixels of the outer layer are hidden: the player is drawn with a copy of their skin in
+  which the covered outer-layer pixels are transparent, and the rest of each layer stays (a skirt
+  hides the trouser pixels under it, not the whole trouser layer). The copy is what `getLocationSkin`
+  returns, so vanilla, first-person arms, 3D Skin Layers' voxels and the Feminine Gender Mod all
+  draw from it. Copies are shared by players with the same skin and outfit, and dropped 30 seconds
+  after nobody is drawn with them.
 - Essential's bone rules between worn cosmetics are applied: `COSMETIC_BONE_HIDING` (a maid outfit
   hides its body and arms under a hoodie) and `EXTERNAL_HIDDEN_BONE` (a hoodie hides a skirt's
   `body_outer`), so two clothes on the same surface don't fight.

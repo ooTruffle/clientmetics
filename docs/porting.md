@@ -60,7 +60,8 @@ compose/         the Kotlin/Compose wardrobe UI. Shared; its offscreen previews 
 - Cosmetics layer: a `RenderLayer`/`FeatureRenderer` on the player renderer; from 1.21.2 it gets
   an entity render state instead of the entity, so per-player data (UUID, outfit, limb angles) has
   to be copied into the state with a mixin.
-- Skin layers hidden by a cosmetic: `PlayerModelPart` handling moved into the render state too.
+- Skin pixels hidden by a cosmetic: the masked skin copy is swapped in where the cape is (the
+  `PlayerSkin` from 1.20.2), and skin images are `NativeImage`s rather than `BufferedImage`s.
 - Commands: Fabric's client command API instead of a chat mixin.
 - Essential, Lunar and Dawn all run on modern Fabric, so `HostClients` matters more there: in
   Lunar Client Lunar cosmetics stay off, with Essential installed Essential stays off, and so on.

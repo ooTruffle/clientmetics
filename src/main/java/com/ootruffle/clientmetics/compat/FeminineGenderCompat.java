@@ -16,8 +16,9 @@ import net.minecraft.util.ResourceLocation;
  * bounce, rotation), each breast gets a box a little larger than the mod's for each of the
  * cosmetic's body-sized cubes, textured from that cube's chest. The mod's breast front is the skin's body-front pixels, and
  * Essential's body cubes use the same box layout, so the same face of the cosmetic's texture is the
- * matching part of the top. The mod's jacket overlay is already hidden then (the jacket layer reads
- * as not worn, see {@link SkinCover}).
+ * matching part of the top. The mod's jacket overlay takes the skin from {@code getLocationSkin},
+ * which is already the masked copy then, so the pixels the top covers are gone from it (see
+ * {@link com.ootruffle.clientmetics.render.MaskedSkins}).
  *
  * <p>A cosmetic that covers the torso but has no body-sized cube can't be fitted, so the breasts
  * are hidden instead, as the mod does under a chestplate.
