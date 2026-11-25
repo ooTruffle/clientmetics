@@ -16,11 +16,13 @@ import net.fabricmc.loader.api.FabricLoader;
  *     <li><b>Dawn Client</b> (formerly Feather): a Fabric mod with the ID {@code dawn} (or
  *     {@code feather}), with its classes under {@code net.digitalingot.feather}.</li>
  *     <li><b>Essential:</b> see {@link EssentialCompat}.</li>
+ *     <li><b>Velo Client:</b> a Fabric mod with the ID {@code velo-client}, entrypoint
+ *     {@code net.veloclient.legacy.VeloLegacy}.</li>
  * </ul>
  * Classes are looked up as resources, never loaded, so nothing of theirs is initialised (or
  * transformed) early by this check.
  * <p>
- * {@code -Dclientmetics.hostClient=lunar,dawn,essential} (any of them) pretends those are present,
+ * {@code -Dclientmetics.hostClient=lunar,dawn,essential,velo} (any of them) pretends those are present,
  * for testing.
  */
 public final class HostClients {
@@ -29,6 +31,7 @@ public final class HostClients {
 
     private static final boolean LUNAR = PRETEND.contains("lunar") || detectLunar();
     private static final boolean DAWN = PRETEND.contains("dawn") || detectDawn();
+    private static final boolean VELO = PRETEND.contains("velo") || detectVelo();
 
     private HostClients() {}
 
@@ -44,8 +47,11 @@ public final class HostClients {
         if (essential()) {
             found.add("Essential");
         }
+        if (VELO) {
+            found.add("Velo Client");
+        }
         if (found.isEmpty()) {
-            Clientmetics.LOGGER.info("No other cosmetics client detected; showing Lunar, Dawn and Essential cosmetics");
+            Clientmetics.LOGGER.info("No other cosmetics client detected; showing Lunar, Dawn, Essential and Velo cosmetics");
         } else {
             Clientmetics.LOGGER.info("Running with {}; leaving their own cosmetics to them", String.join(", ", found));
         }
@@ -59,6 +65,11 @@ public final class HostClients {
     /** Running with Dawn Client, which draws Dawn cosmetics itself. */
     public static boolean dawn() {
         return DAWN;
+    }
+
+    /** Velo Client is installed, and draws Velo capes itself. */
+    public static boolean velo() {
+        return VELO;
     }
 
     /** Essential is installed, and draws Essential cosmetics itself. */
@@ -79,6 +90,11 @@ public final class HostClients {
         final FabricLoader loader = FabricLoader.getInstance();
         return loader.isModLoaded("dawn") || loader.isModLoaded("feather")
                 || hasResource("net/digitalingot/feather/FeatherMod.class");
+    }
+
+    private static boolean detectVelo() {
+        return FabricLoader.getInstance().isModLoaded("velo-client")
+                || hasResource("net/veloclient/legacy/VeloLegacy.class");
     }
 
     private static boolean hasResource(String path) {

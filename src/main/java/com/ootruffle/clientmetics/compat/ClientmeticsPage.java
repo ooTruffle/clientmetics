@@ -23,7 +23,7 @@ public final class ClientmeticsPage extends org.polyfrost.oneconfig.api.config.v
 
     static final ClientmeticsPage INSTANCE = new ClientmeticsPage();
 
-    @Switch(title = "Enabled", description = "Master switch: connect and show cosmetics at all (Lunar, Dawn and Essential).", subcategory = "General")
+    @Switch(title = "Enabled", description = "Master switch: connect and show cosmetics at all (Lunar, Dawn, Essential and Velo).", subcategory = "General")
     public boolean enabled = true;
 
     @Button(title = "Wardrobe", description = "Equip the Lunar, Dawn and Essential cosmetics your accounts own.", text = "Open", subcategory = "General")
@@ -43,6 +43,10 @@ public final class ClientmeticsPage extends org.polyfrost.oneconfig.api.config.v
     @Switch(title = "Essential Cosmetics", description = "Show Essential Mod cosmetics and the wardrobe tab. Unofficial: Essential doesn't document or permit this. Off by itself with Essential installed.",
             subcategory = "General")
     public boolean essential = true;
+
+    @Switch(title = "Velo Capes", description = "Show the capes Velo Client users wear. Reads Velo's public list of online players (no sign-in). Off by itself with Velo Client installed.",
+            subcategory = "General")
+    public boolean velo = true;
 
     @Switch(title = "Cosmetic Colours", description = "Show the colours other Clientmetics users picked for their cosmetics, and share yours (pick them in the wardrobe). Uses the Clientmetics colour server.",
             subcategory = "General")
@@ -131,6 +135,7 @@ public final class ClientmeticsPage extends org.polyfrost.oneconfig.api.config.v
                 || c.showOwn != INSTANCE.showOwn
                 || c.dawn != INSTANCE.dawn
                 || c.essential != INSTANCE.essential
+                || c.velo != INSTANCE.velo
                 || c.recolours != INSTANCE.recolours
                 || c.maxPlayers != INSTANCE.maxPlayers
                 || c.bellVolume != INSTANCE.bellVolume
@@ -149,6 +154,7 @@ public final class ClientmeticsPage extends org.polyfrost.oneconfig.api.config.v
         c.showOwn = INSTANCE.showOwn;
         c.dawn = INSTANCE.dawn;
         c.essential = INSTANCE.essential;
+        c.velo = INSTANCE.velo;
         c.recolours = INSTANCE.recolours;
         c.maxPlayers = INSTANCE.maxPlayers;
         c.bellVolume = INSTANCE.bellVolume;
@@ -186,6 +192,7 @@ public final class ClientmeticsPage extends org.polyfrost.oneconfig.api.config.v
         showOwn = c.showOwn;
         dawn = c.dawn;
         essential = c.essential;
+        velo = c.velo;
         recolours = c.recolours;
         maxPlayers = c.maxPlayers;
         bellVolume = c.bellVolume;

@@ -28,9 +28,10 @@ public final class Consent {
      *     <li>0: Lunar and Dawn (before this was tracked).</li>
      *     <li>2: Essential, now on by default, and the Lunar switch.</li>
      *     <li>3: The Clientmetics colour server (cosmetic colours).</li>
+     *     <li>4: Velo Client capes.</li>
      * </ul>
      */
-    public static final int NOTICE_VERSION = 3;
+    public static final int NOTICE_VERSION = 4;
 
     private static final int DELAY_SECONDS = 4;
     /** Ticks between attempts to put the question back after something replaced it. */
@@ -49,6 +50,9 @@ public final class Consent {
             + "with its own setting (Lunar, Dawn and Essential Cosmetics).\n"
             + "Essential support talks to Essential's own connection manager, which Essential neither documents nor "
             + "permits, and which its source licence forbids reimplementing. It can break or be refused at any time.\n"
+            + "\n"
+            + "Velo Client capes are read from Velo's public list of online players and its cape files, without "
+            + "signing in to Velo. Turn it off with the Velo Capes setting.\n"
             + "\n"
             + "Cosmetic colours also log your account into the Clientmetics colour server, which keeps the colours you "
             + "pick (by Minecraft UUID) and tells other Clientmetics users near you about them. Turn it off with "

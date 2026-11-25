@@ -10,6 +10,7 @@ import com.ootruffle.clientmetics.asset.Textures;
 import com.ootruffle.clientmetics.cosmetic.EquippedCosmetic;
 import com.ootruffle.clientmetics.cosmetic.EssentialSnapshot;
 import com.ootruffle.clientmetics.cosmetic.Recolours;
+import com.ootruffle.clientmetics.cosmetic.VeloCosmeticManager;
 import com.ootruffle.clientmetics.model.GeoCosmetic;
 import java.util.UUID;
 import net.minecraft.util.ResourceLocation;
@@ -21,6 +22,8 @@ import net.minecraft.util.ResourceLocation;
  * <p>
  * Dawn cloaks use the same 22x17 cape layout, so they go through the same path. Only the WebP
  * ones can be shown: most Dawn cloaks are animated AVIF, which Java can't decode.
+ * <p>
+ * Velo Client capes are 64x32-layout images (often animated GIFs) and go through the same path.
  */
 public final class Cloaks {
 
@@ -53,11 +56,13 @@ public final class Cloaks {
             }
         }
         final String essential = essentialCapeTexture(uuid);
-        if (essential == null) {
-            return null;
+        if (essential != null) {
+            final EssentialCatalog.Entry cape = essentialCape(PreviewRenderer.essentialOutfitFor(uuid));
+            return Textures.get(essential, Textures.Kind.CLOAK, cape == null ? -1 : Recolours.colour(uuid, "essential:" + cape.id));
         }
-        final EssentialCatalog.Entry cape = essentialCape(PreviewRenderer.essentialOutfitFor(uuid));
-        return Textures.get(essential, Textures.Kind.CLOAK, cape == null ? -1 : Recolours.colour(uuid, "essential:" + cape.id));
+        // Velo capes: not while a wardrobe preview overrides the outfit (Velo has no wardrobe here).
+        final String velo = config.veloOn() && !PreviewRenderer.isPreviewing() ? VeloCosmeticManager.cape(uuid) : null;
+        return velo == null ? null : Textures.get(velo, Textures.Kind.CLOAK);
     }
 
     /** The equipped Essential CAPE-slot cosmetic (which may be a Minecraft cape or "Cape Disabled"), or null. */
