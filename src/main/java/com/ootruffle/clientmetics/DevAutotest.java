@@ -33,6 +33,8 @@ public final class DevAutotest {
     /** {@code CLIENTMETICS_AUTOTEST=essential-colour}: Essential cat ears in several colours (see {@link EssentialRecolourAutotest}). */
     /** {@code CLIENTMETICS_AUTOTEST=collar}: the bell collar (see {@link CollarAutotest}). */
     private static final boolean COLLAR = DEV && "collar".equals(System.getenv("CLIENTMETICS_AUTOTEST"));
+    /** {@code CLIENTMETICS_AUTOTEST=velo}: Velo capes (see {@link VeloAutotest}). */
+    private static final boolean VELO = DEV && "velo".equals(System.getenv("CLIENTMETICS_AUTOTEST"));
     private static final boolean ESSENTIAL_COLOUR = DEV && "essential-colour".equals(System.getenv("CLIENTMETICS_AUTOTEST"));
     private static final String[][] DAWN_OUTFITS = {
             {"hat", "wing", "pet", "boot", "cape"},
@@ -60,6 +62,9 @@ public final class DevAutotest {
         }
         if (COLLAR) {
             CollarAutotest.tick();
+        }
+        if (VELO) {
+            VeloAutotest.tick();
         }
         if (!ENABLED) {
             return;

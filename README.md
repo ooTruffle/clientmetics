@@ -53,6 +53,17 @@ Not supported for Dawn:
 - **AVIF textures.** Java has no AVIF decoder (Dawn ships a native one), so anything with only an `.avif` texture is skipped. That is most cloaks (301 of 323 at the time of writing) and most shields; nearly every model type uses WebP and works.
 - Shields, trims, emotes, the `fly` animation clip, `hideDuringCombat`, and the few wings that have a texture but no model.
 
+## Velo Client
+
+With `velo` on (the default), the mod also shows Velo Client capes:
+
+- **Who wears what:** Velo has no per-player lookup. Every Velo client downloads one worldwide list of online Velo users and their capes (`GET api.velo-client.com/v1/online`, no sign-in), and this mod does the same every 30 seconds while you're on a server. It never signs in to Velo or sends a heartbeat, so it never shows up as a Velo user. Players are matched by UUID only; Velo also falls back to the player's name, which on offline-mode servers hands a Velo user's cape to anyone using their name.
+- **Assets:** `custom:<sha256>` capes (uploaded by the player) come from `GET /v1/cape/<sha>`; Store capes are looked up with `GET /v1/cosmetics/item?id=` and fetched by the hash it names. Velo's own cache (`%APPDATA%\VeloClient\cache`) is read first if Velo is installed, then `config/clientmetics/cache/velo`. Every file is SHA-256 checked and at most 12 MiB.
+- **Drawing:** as in Velo, only the 22x17-cell cape region of the 64x32 layout is kept, at the source's scale rounded down to a power of two (at most 8x, less for long animations). Animated GIFs play with their own frame times. Capes go through the vanilla cape layer, so they swing like capes.
+- **Your own cape** comes from your local Velo folder (`config/accounts/<uuid>/cosmetics-cape.json`, then the matching `.velocape` in `capes/`), as Velo itself does, since this mod never appears in Velo's online list.
+
+Not supported for Velo: wings, auras and wear slots (Velo's 1.8.9 build doesn't draw them either, and the online list doesn't carry them), the Velo / Velo Plus badges (they're a client indicator, not a cosmetic), and a wardrobe tab (equipping in Velo is reported through its signed-in heartbeat, which would make this mod pose as Velo).
+
 ## Cosmetic colours
 
 Clientmetics users can pick a colour for any cosmetic they're wearing (Lunar, Dawn or Essential),
@@ -74,15 +85,16 @@ refresh button puts its own colours back.
   with `recolours` (**Cosmetic Colours** on the Clientmetics page). `-Dclientmetics.server=<url>`
   points the mod at another copy of the server.
 
-## Running inside Lunar, Dawn or Essential
+## Running inside Lunar, Dawn, Essential or Velo
 
 Each of those already draws its own cosmetics, so Clientmetics leaves that source to it and keeps the others:
 
 - **Lunar Client** (its launcher sets `ichor.*` system properties; its classes are under `com.moonsworth.lunar`): Lunar cosmetics are off, Dawn and Essential still show.
 - **Dawn Client** (Fabric mod `dawn`, or `feather`): Dawn cosmetics are off.
 - **Essential** installed: Essential cosmetics are off.
+- **Velo Client** (Fabric mod `velo-client`): Velo capes are off.
 
-With none of them, all three run. A source left to its client also drops out of the wardrobe; use that client's own wardrobe instead. `-Dclientmetics.hostClient=lunar,dawn,essential` (any of them) pretends they are present, for testing.
+With none of them, all four run. A source left to its client also drops out of the wardrobe; use that client's own wardrobe instead. `-Dclientmetics.hostClient=lunar,dawn,essential,velo` (any of them) pretends they are present, for testing.
 
 ## ClientTag
 
@@ -169,7 +181,7 @@ Without OneConfig, edit `config/clientmetics/config.json` (read at startup):
 
 | Key | Default | |
 | --- | --- | --- |
-| `enabled` | `true` | Master switch: connect and draw at all (Lunar, Dawn and Essential) |
+| `enabled` | `true` | Master switch: connect and draw at all (Lunar, Dawn, Essential and Velo) |
 | `lunar` | `true` | Show Lunar Client cosmetics (off: Lunar is never contacted; Dawn and Essential still work) |
 | `catalogueSource` | `"auto"` | `auto` (install if present, else download), `install`, or `download` |
 | `lunarDirectory` | `""` | Lunar data folder; empty means `~/.lunarclient` |
@@ -177,6 +189,7 @@ Without OneConfig, edit `config/clientmetics/config.json` (read at startup):
 | `dawn` | `true` | Also show Dawn Client cosmetics |
 | `dawnDirectory` | `""` | Dawn data folder; empty means `%APPDATA%\.dawn` (or `~/.dawn`) |
 | `essential` | `true` | Show Essential cosmetics and its wardrobe tab (unofficial; see above) |
+| `velo` | `true` | Show Velo Client capes (reads Velo's public online list; no sign-in) |
 | `showOwn` | `true` | Your own outfit in third person |
 | `showCloaks`, `showHats`, `showBodywear`, `showGeckolib` | `true` | Per type |
 | `animate` | `true` | GeckoLib animations |
@@ -205,6 +218,8 @@ Dev runs always load PolyCompose, and leave OneConfig out unless asked for:
 
 `CLIENTMETICS_AUTOTEST=1` makes a dev run open a test world, fill the wardrobe with sample cosmetics cached on disk, save screenshots to `run/screenshots/` and quit. `CLIENTMETICS_AUTOTEST=dawn` does the same with Dawn outfits from a local Dawn install, ending with the Dawn wardrobe filled with demo data and, with OneConfig, a screenshot of OneConfig's own menu to compare against. With `CLIENTMETICS_AUTOTEST_THEME` (such as `Minecraft Light`) and/or `CLIENTMETICS_AUTOTEST_ACCENT` (hex RGB), the dawn run switches the wardrobe's theme and accent first and puts them back before quitting. With `-Pclientmetics.devCompat=true`, a dev run also loads the Feminine Gender Mod and 3D Skin Layers (jars in `libs/devcompat`, with fabric-language-kotlin) and the OSL modules they need; the Essential autotest then sets the dev player to female and checks a bare outfit, a hoodie and a skirt next to them (`clientmetics-essential-compat-*` screenshots).
 
+`CLIENTMETICS_AUTOTEST=velo` checks Velo capes: your own cape from a generated local Velo folder (`run/velo-test`, a different colour on each face so a wrong crop or flip shows), then two Velo Store capes downloaded through Velo's API like any other player's. Each is screenshotted from behind, in front and walking (`clientmetics-velo-*`), checked to animate, freed and reloaded, and Velo's live online list is read once. Each check logs `[autotest] PASS` or `FAIL`.
+
 `CLIENTMETICS_AUTOTEST=essential` checks the Essential side: default colours, chosen colours, Minecraft capes, "Cape Disabled" and the wardrobe's filtering. It also loads every wearable cosmetic in the catalogue (downloading what isn't cached) and checks that each animated texture splits into frames, then screenshots 12 mixed showcase outfits (`clientmetics-essential-showcase-*`). Each check logs `[autotest] PASS` or `[autotest] FAIL`, with a total at the end. It also screenshots three outfits (front and back) and the Essential wardrobe filled with demo data. It needs Essential's `catalogue.json` in `run/config/clientmetics/essential/` (copy it, and ideally `cache/essential/`, from any install that has connected once). Nothing is sent to Essential. None of these modes do anything outside the dev environment.
 
 ## Risks
@@ -215,4 +230,6 @@ The same goes for Dawn: its gateway needs a Dawn access token, which this mod ge
 
 Essential is riskier still: it talks to Essential's connection manager, which Essential neither documents nor permits, and which its source licence forbids reimplementing. It can break or be refused at any time. Turn `essential` off to never contact Essential.
 
-Because of this, the first launch asks before anything is loaded or connects. The buttons unlock after a few seconds, and "Not now" keeps the mod idle until the next launch, which asks again. With ClientTag installed, its warning is shown first and this one follows. To skip the prompt (e.g. in a modpack), set `termsNoticeSeen` to `true` and `termsNoticeVersion` to the current notice version (`Consent.NOTICE_VERSION`, now `2`) in `config/clientmetics/config.json`. When the notice changes what's being agreed to, its version goes up and everyone who accepted an older one is asked again.
+Velo is lower risk (only public, unauthenticated endpoints are read), but it's still unofficial and undocumented, and the paths come from reading Velo 1.2.0's code. `-Dclientmetics.veloApi=<url>` points it elsewhere; turn `velo` off to never contact Velo.
+
+Because of this, the first launch asks before anything is loaded or connects. The buttons unlock after a few seconds, and "Not now" keeps the mod idle until the next launch, which asks again. With ClientTag installed, its warning is shown first and this one follows. To skip the prompt (e.g. in a modpack), set `termsNoticeSeen` to `true` and `termsNoticeVersion` to the current notice version (`Consent.NOTICE_VERSION`, now `4`) in `config/clientmetics/config.json`. When the notice changes what's being agreed to, its version goes up and everyone who accepted an older one is asked again.

@@ -42,13 +42,45 @@ public final class Textures {
     private static final int MAX_CLOAK_SCALE = 8;
     private static final int UPLOADS_PER_TICK = 8;
 
-    private static final class Decoded {
+    static final class Decoded {
         final BufferedImage[] frames;
         final int frameTimeTicks;
+        /** Each frame's own duration in milliseconds (animated GIFs), or null for {@link #frameTimeTicks}. */
+        final int[] frameMs;
+        final long totalMs;
 
         Decoded(BufferedImage[] frames, int frameTimeTicks) {
             this.frames = frames;
             this.frameTimeTicks = Math.max(1, frameTimeTicks);
+            this.frameMs = null;
+            this.totalMs = 0;
+        }
+
+        Decoded(BufferedImage[] frames, int[] frameMs) {
+            this.frames = frames;
+            this.frameTimeTicks = 1;
+            this.frameMs = frames.length > 1 ? frameMs : null;
+            long total = 0;
+            if (this.frameMs != null) {
+                for (int ms : frameMs) {
+                    total += ms;
+                }
+            }
+            this.totalMs = total;
+        }
+
+        int frameAt(long nowMs) {
+            if (frameMs == null || totalMs <= 0) {
+                return (int) (nowMs / 50 / frameTimeTicks % frames.length);
+            }
+            long t = nowMs % totalMs;
+            for (int i = 0; i < frameMs.length; i++) {
+                t -= frameMs[i];
+                if (t < 0) {
+                    return i;
+                }
+            }
+            return frameMs.length - 1;
         }
     }
 
@@ -150,8 +182,7 @@ public final class Textures {
         if (up.uploaded < up.frames.length) {
             return up.frames[0];
         }
-        final long ticks = Minecraft.getSystemTime() / 50;
-        return up.frames[(int) (ticks / up.source.frameTimeTicks % up.frames.length)];
+        return up.frames[up.source.frameAt(Minecraft.getSystemTime())];
     }
 
     /** Frees every uploaded texture. Render thread only. */
@@ -200,6 +231,14 @@ public final class Textures {
             if (fromVariants != null) {
                 return fromVariants;
             }
+        }
+        if (VeloFiles.handles(path)) {
+            // Velo capes: GIFs with their own frame times, laid out the way Velo samples them.
+            final Decoded velo = VeloFiles.decode(path);
+            if (colour >= 0) {
+                Recolour.apply(velo.frames, colour);
+            }
+            return velo;
         }
         final BufferedImage image = readImage(path, AssetFiles.read(path));
         int frameW = image.getWidth();

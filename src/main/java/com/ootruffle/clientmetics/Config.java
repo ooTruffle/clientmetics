@@ -18,7 +18,7 @@ public final class Config {
 
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
-    /** Master switch: connect anywhere and draw cosmetics at all (Lunar, Dawn and Essential). */
+    /** Master switch: connect anywhere and draw cosmetics at all (Lunar, Dawn, Essential and Velo). */
     public boolean enabled = true;
     /** Show Lunar Client cosmetics (connects to Lunar's game websocket with the game's own session). */
     public boolean lunar = true;
@@ -41,6 +41,11 @@ public final class Config {
      * manager, which Essential does not document or permit (the first-launch notice says so).
      */
     public boolean essential = true;
+    /**
+     * Show Velo Client capes. Reads Velo's public list of online players and their capes (no
+     * sign-in, nothing sent about you).
+     */
+    public boolean velo = true;
     /**
      * Cosmetic colours: show the colours other Clientmetics users picked for their cosmetics, and
      * share yours (connects to the Clientmetics colour server with the game's own session).
@@ -91,6 +96,11 @@ public final class Config {
     /** Essential cosmetics are wanted: on in the settings, and Essential isn't installed (it draws its own). */
     public boolean essentialOn() {
         return essential && !com.ootruffle.clientmetics.compat.HostClients.essential();
+    }
+
+    /** Velo capes are wanted: on in the settings, and Velo Client isn't installed (it draws its own). */
+    public boolean veloOn() {
+        return velo && !com.ootruffle.clientmetics.compat.HostClients.velo();
     }
 
     public static Config get() {

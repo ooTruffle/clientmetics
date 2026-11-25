@@ -58,6 +58,9 @@ public final class AssetFiles {
         if (EssentialFiles.handles(path)) {
             return EssentialFiles.read(path);
         }
+        if (VeloFiles.handles(path)) {
+            return VeloFiles.read(path);
+        }
         final String clean = Catalog.stripNamespace(path).replace('\\', '/');
         if (clean.contains("..")) {
             throw new IOException("bad path " + path);
@@ -76,6 +79,9 @@ public final class AssetFiles {
         }
         if (EssentialFiles.handles(path)) {
             return EssentialFiles.existsLocally(path);
+        }
+        if (VeloFiles.handles(path)) {
+            return VeloFiles.existsLocally(path);
         }
         return findLocal(Catalog.stripNamespace(path).replace('\\', '/')) != null;
     }
@@ -106,6 +112,9 @@ public final class AssetFiles {
         }
         if (EssentialFiles.handles(path)) {
             return EssentialFiles.exists(path);
+        }
+        if (VeloFiles.handles(path)) {
+            return VeloFiles.exists(path);
         }
         final Catalog catalog = Catalog.get();
         return existsLocally(path) || catalog != null && catalog.file(Catalog.stripNamespace(path)) != null;

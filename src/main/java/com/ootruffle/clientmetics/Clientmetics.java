@@ -130,6 +130,7 @@ public final class Clientmetics implements ModInitializer {
         CosmeticManager.onClientTick();
         DawnCosmeticManager.onClientTick();
         com.ootruffle.clientmetics.cosmetic.EssentialCosmeticManager.onClientTick();
+        com.ootruffle.clientmetics.cosmetic.VeloCosmeticManager.onClientTick();
         com.ootruffle.clientmetics.cosmetic.Recolours.onClientTick();
         com.ootruffle.clientmetics.render.BellCollar.onClientTick();
     }
