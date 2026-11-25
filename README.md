@@ -16,7 +16,7 @@ this mod is almost entirely sloped, pr's are accepted to clean up the code
   - cloaks replace the vanilla cape texture;
   - OBJ hats and bodywear attach to the head or body bone, using the `player` transforms from `hats.json` / `bodywear.json`;
   - GeckoLib items (pets, wings, suits, shoes, GeckoLib hats) render with GeckoLib's conventions and a built-in Molang interpreter that also loads Lunar's `functions.molang`.
-- **Honest client identity:** the handshake names this mod (User-Agent `Clientmetics/1.0.0`, listed as a Fabric mod). It sends the real OS/CPU and no Lunar launcher or client version, hardware ID or canary token. If Lunar refuses that, the mod shows nothing.
+- **Honest client identity:** the handshake names this mod (User-Agent `Clientmetics/1.1.0`, listed as a Fabric mod). It sends the real OS/CPU and no Lunar launcher or client version, hardware ID or canary token. If Lunar refuses that, the mod shows nothing.
 
 ## Essential cosmetics
 
