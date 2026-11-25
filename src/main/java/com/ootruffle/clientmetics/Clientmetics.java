@@ -124,6 +124,7 @@ public final class Clientmetics implements ModInitializer {
         DevAutotest.onClientTick();
         // Nothing is loaded or connects anywhere until the first-launch warning has been accepted.
         Consent.onClientTick();
+        com.ootruffle.clientmetics.update.Updater.onClientTick();
         Textures.onTick();
         MemoryJanitor.onClientTick();
         OneConfigCompat.onClientTick();

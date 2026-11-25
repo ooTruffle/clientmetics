@@ -35,6 +35,8 @@ public final class DevAutotest {
     private static final boolean COLLAR = DEV && "collar".equals(System.getenv("CLIENTMETICS_AUTOTEST"));
     /** {@code CLIENTMETICS_AUTOTEST=velo}: Velo capes (see {@link VeloAutotest}). */
     private static final boolean VELO = DEV && "velo".equals(System.getenv("CLIENTMETICS_AUTOTEST"));
+    /** {@code CLIENTMETICS_AUTOTEST=updater}: the updater against the real latest release (see {@link UpdaterAutotest}). */
+    private static final boolean UPDATER = DEV && "updater".equals(System.getenv("CLIENTMETICS_AUTOTEST"));
     private static final boolean ESSENTIAL_COLOUR = DEV && "essential-colour".equals(System.getenv("CLIENTMETICS_AUTOTEST"));
     private static final String[][] DAWN_OUTFITS = {
             {"hat", "wing", "pet", "boot", "cape"},
@@ -65,6 +67,9 @@ public final class DevAutotest {
         }
         if (VELO) {
             VeloAutotest.tick();
+        }
+        if (UPDATER) {
+            UpdaterAutotest.tick();
         }
         if (!ENABLED) {
             return;

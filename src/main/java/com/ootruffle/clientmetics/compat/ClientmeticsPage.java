@@ -85,6 +85,9 @@ public final class ClientmeticsPage extends org.polyfrost.oneconfig.api.config.v
     @Switch(title = "Download Missing Cosmetics", description = "Fetch cosmetic models and textures from Lunar's CDN when they aren't cached.", subcategory = "Assets")
     public boolean downloadMissingAssets = true;
 
+    @Switch(title = "Check for Updates", description = "Look for a newer Clientmetics on GitHub when the game starts, and offer to install it.", subcategory = "Advanced")
+    public boolean checkForUpdates = true;
+
     @Switch(title = "Debug Logging", description = "Log every outfit and asset load.", subcategory = "Advanced")
     public boolean debug = false;
 
@@ -145,6 +148,7 @@ public final class ClientmeticsPage extends org.polyfrost.oneconfig.api.config.v
                 || c.showGeckolib != INSTANCE.showGeckolib
                 || c.animate != INSTANCE.animate
                 || c.downloadMissingAssets != INSTANCE.downloadMissingAssets
+                || c.checkForUpdates != INSTANCE.checkForUpdates
                 || c.debug != INSTANCE.debug;
         if (!changed) {
             return;
@@ -167,6 +171,7 @@ public final class ClientmeticsPage extends org.polyfrost.oneconfig.api.config.v
         c.lunarDirectory = dir;
         c.downloadMissingAssets = INSTANCE.downloadMissingAssets;
         c.debug = INSTANCE.debug;
+        c.checkForUpdates = INSTANCE.checkForUpdates;
         Config.save();
         if (!c.lunarOn()) {
             if (Catalog.get() != null) {
@@ -210,6 +215,7 @@ public final class ClientmeticsPage extends org.polyfrost.oneconfig.api.config.v
         lunarDirectory = c.lunarDirectory == null ? "" : c.lunarDirectory;
         downloadMissingAssets = c.downloadMissingAssets;
         debug = c.debug;
+        checkForUpdates = c.checkForUpdates;
     }
 
 }
