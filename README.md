@@ -202,6 +202,12 @@ Without OneConfig, edit `config/clientmetics/config.json` (read at startup):
 - The older non-GeckoLib dragon wings (209 items): Lunar draws them with a model built into the client, which isn't in the install's files.
 - Emotes, auras' particle effects, morphs, cloth-cloak physics, shields held in hand.
 
+## Updates
+
+Once per launch (after the first-launch notice), the mod asks GitHub for the latest release of `ooTruffle/clientmetics`. If it's newer, you're offered it: as a OneConfig notification with OneConfig installed, otherwise on the title screen. **Update** downloads the release's jar into `config/clientmetics/update` (outside `mods`) and checks it against the SHA-256 GitHub lists for it; a release without one isn't offered. The new jar is installed when you close the game: a small helper process started from the new jar waits for the game to exit, puts it in `mods` and deletes the old jar. If the old jar can't be deleted, the new one is taken back out so two versions are never loaded, and the next exit tries again (see `config/clientmetics/update/update.log`).
+
+Nothing is installed without clicking **Update**. Turn the check off with `checkForUpdates` (**Check for Updates** on the Clientmetics page). It's off in dev runs and when the mod isn't a plain jar in a folder.
+
 ## Build
 
 ```
@@ -219,6 +225,8 @@ Dev runs always load PolyCompose, and leave OneConfig out unless asked for:
 `CLIENTMETICS_AUTOTEST=1` makes a dev run open a test world, fill the wardrobe with sample cosmetics cached on disk, save screenshots to `run/screenshots/` and quit. `CLIENTMETICS_AUTOTEST=dawn` does the same with Dawn outfits from a local Dawn install, ending with the Dawn wardrobe filled with demo data and, with OneConfig, a screenshot of OneConfig's own menu to compare against. With `CLIENTMETICS_AUTOTEST_THEME` (such as `Minecraft Light`) and/or `CLIENTMETICS_AUTOTEST_ACCENT` (hex RGB), the dawn run switches the wardrobe's theme and accent first and puts them back before quitting. With `-Pclientmetics.devCompat=true`, a dev run also loads the Feminine Gender Mod and 3D Skin Layers (jars in `libs/devcompat`, with fabric-language-kotlin) and the OSL modules they need; the Essential autotest then sets the dev player to female and checks a bare outfit, a hoodie and a skirt next to them (`clientmetics-essential-compat-*` screenshots).
 
 `CLIENTMETICS_AUTOTEST=velo` checks Velo capes: your own cape from a generated local Velo folder (`run/velo-test`, a different colour on each face so a wrong crop or flip shows), then two Velo Store capes downloaded through Velo's API like any other player's. Each is screenshotted from behind, in front and walking (`clientmetics-velo-*`), checked to animate, freed and reloaded, and Velo's live online list is read once. Each check logs `[autotest] PASS` or `FAIL`.
+
+`CLIENTMETICS_AUTOTEST=updater` (best with `-Pclientmetics.devOneConfig=true`) checks the updater against GitHub's real latest release: it pretends to be 1.0.0 installed as a fake jar in `run/updater-test/mods`, screenshots the offer (`clientmetics-updater-*`), downloads and verifies the release as if **Update** were clicked, and quits. Once the game has closed, `run/updater-test/mods` should hold only the release's jar; `run/config/clientmetics/update/update.log` says what the installer did.
 
 `CLIENTMETICS_AUTOTEST=essential` checks the Essential side: default colours, chosen colours, Minecraft capes, "Cape Disabled" and the wardrobe's filtering. It also loads every wearable cosmetic in the catalogue (downloading what isn't cached) and checks that each animated texture splits into frames, then screenshots 12 mixed showcase outfits (`clientmetics-essential-showcase-*`). Each check logs `[autotest] PASS` or `[autotest] FAIL`, with a total at the end. It also screenshots three outfits (front and back) and the Essential wardrobe filled with demo data. It needs Essential's `catalogue.json` in `run/config/clientmetics/essential/` (copy it, and ideally `cache/essential/`, from any install that has connected once). Nothing is sent to Essential. None of these modes do anything outside the dev environment.
 

@@ -79,7 +79,7 @@ dependencies {
     } else {
         modCompileOnly("org.polyfrost.oneconfig:$minecraftVersion-ornithe:$oneconfigVersion") { isTransitive = false }
     }
-    for (module in arrayOf("config", "config-impl", "utils", "ui")) {
+    for (module in arrayOf("config", "config-impl", "utils", "ui", "notifications")) {
         if (devOneConfig) {
             implementation("org.polyfrost.oneconfig:$module:$oneconfigVersion")
         } else {

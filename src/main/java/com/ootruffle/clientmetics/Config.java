@@ -62,6 +62,11 @@ public final class Config {
     public int bellVolume = 100;
     /** The extras the colour server last said you may wear, so they show in singleplayer too. */
     public java.util.List<String> grantedExtras = new java.util.ArrayList<>();
+    /**
+     * Look for a newer Clientmetics on GitHub once per launch and offer to install it (a OneConfig
+     * notification, or a prompt on the title screen without OneConfig). See {@link com.ootruffle.clientmetics.update.Updater}.
+     */
+    public boolean checkForUpdates = true;
     /** Show your own equipped cosmetics in third person. */
     public boolean showOwn = true;
     public boolean showCloaks = true;
