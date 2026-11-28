@@ -29,7 +29,7 @@ import java.util.function.Consumer;
  */
 public final class LunarSocket {
 
-    public static final String MOD_VERSION = "1.1.0";
+    public static final String MOD_VERSION = "1.1.1";
     public static final String USER_AGENT = "Clientmetics/" + MOD_VERSION + " (Minecraft 1.8.9; Ornithe)";
 
     private static final String SOCKET_URL = "wss://websocket.lunarclientprod.com/game";

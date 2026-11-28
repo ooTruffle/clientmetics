@@ -8,7 +8,7 @@ import com.ootruffle.clientmetics.Clientmetics;
 import com.ootruffle.clientmetics.Config;
 import com.ootruffle.clientmetics.Consent;
 import com.ootruffle.clientmetics.net.LunarSocket;
-import com.ootruffle.clientmetics.render.TermsNoticeScreen;
+import com.ootruffle.clientmetics.render.Notice;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -193,7 +193,7 @@ public final class Updater {
             message.append(release.notes).append("\n\n");
         }
         message.append("Update downloads it from GitHub and installs it when you close the game.");
-        mc.displayGuiScreen(new TermsNoticeScreen("Clientmetics update", message.toString(), "Update", "Not now", 0, yes -> {
+        mc.displayGuiScreen(Notice.create("Clientmetics update", message.toString(), "Update", "Not now", 0, yes -> {
             mc.displayGuiScreen(previous);
             if (yes) {
                 startDownload(mc, release);
@@ -242,7 +242,7 @@ public final class Updater {
                 }
                 final GuiScreen previous = mc.currentScreen;
                 if (failure == null) {
-                    mc.displayGuiScreen(new TermsNoticeScreen("Clientmetics update",
+                    mc.displayGuiScreen(Notice.create("Clientmetics update",
                             "Clientmetics " + release.version + " is downloaded. It's installed when you close the game, "
                                     + "and runs from the next launch.", "Quit and install", "Later", 0, quit -> {
                                 if (quit) {
@@ -252,7 +252,7 @@ public final class Updater {
                                 }
                             }));
                 } else {
-                    mc.displayGuiScreen(new TermsNoticeScreen("Clientmetics update",
+                    mc.displayGuiScreen(Notice.create("Clientmetics update",
                             "The update couldn't be downloaded: " + failure + "\n\nYou can get it from github.com/" + REPO
                                     + "/releases.", "OK", "Close", 0, ok -> mc.displayGuiScreen(previous)));
                 }
