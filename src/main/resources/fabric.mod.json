@@ -7,6 +7,11 @@
   "authors": [
     "ooTruffle"
   ],
+  "contact": {
+    "homepage": "https://github.com/ooTruffle/clientmetics",
+    "sources": "https://github.com/ooTruffle/clientmetics",
+    "issues": "https://github.com/ooTruffle/clientmetics/issues"
+  },
   "environment": "client",
   "entrypoints": {
     "init": [
