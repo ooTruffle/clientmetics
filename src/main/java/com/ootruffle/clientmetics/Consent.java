@@ -4,7 +4,7 @@ import com.ootruffle.clientmetics.asset.Assets;
 import com.ootruffle.clientmetics.asset.Catalog;
 import com.ootruffle.clientmetics.asset.DawnCatalog;
 import com.ootruffle.clientmetics.compat.ClientTagCompat;
-import com.ootruffle.clientmetics.render.TermsNoticeScreen;
+import com.ootruffle.clientmetics.render.Notice;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiScreen;
 
@@ -102,7 +102,7 @@ public final class Consent {
             return;
         }
         final Minecraft mc = Minecraft.getMinecraft();
-        if (mc.currentScreen instanceof TermsNoticeScreen) {
+        if (mc.currentScreen instanceof Notice.Screen) {
             return;
         }
         // ClientTag's warning goes first. If it never shows up, don't wait for it forever.
@@ -119,7 +119,7 @@ public final class Consent {
         }
         reopenCooldown = REOPEN_TICKS;
         final GuiScreen previous = mc.currentScreen;
-        mc.displayGuiScreen(new TermsNoticeScreen(TITLE, MESSAGE, YES, NO, DELAY_SECONDS, yes -> {
+        mc.displayGuiScreen(Notice.create(TITLE, MESSAGE, YES, NO, DELAY_SECONDS, yes -> {
             answer(yes);
             mc.displayGuiScreen(previous);
         }));

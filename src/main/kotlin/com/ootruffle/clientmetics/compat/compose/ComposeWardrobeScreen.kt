@@ -1107,7 +1107,7 @@ private fun hueColour(hue: Float): Int = java.awt.Color.HSBtoRGB(hue.coerceIn(0f
 
 private fun hueOf(rgb: Int): Float = java.awt.Color.RGBtoHSB((rgb shr 16) and 0xFF, (rgb shr 8) and 0xFF, rgb and 0xFF, null)[0]
 
-private fun easeOutExpo(x: Float): Float = if (x >= 1f) 1f else if (x <= 0f) 0f else 1f - Math.pow(2.0, -10.0 * x).toFloat()
+internal fun easeOutExpo(x: Float): Float = if (x >= 1f) 1f else if (x <= 0f) 0f else 1f - Math.pow(2.0, -10.0 * x).toFloat()
 
 /** The outfit preview's key in the thumbnail map (item keys start with "lunar:" or "dawn:"). */
 private const val BIG = "outfit"

@@ -8,11 +8,11 @@ import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.renderer.GlStateManager;
 
 /**
- * The first-launch terms question (see {@link com.ootruffle.clientmetics.Consent}): a wrapped,
+ * The plain version of {@link Notice} (when PolyCompose can't draw it): a wrapped,
  * multi-line message with a yes and a no button, the same as ClientTag's. The buttons only work
  * after a delay, so the message gets read, and Escape doesn't close it.
  */
-public final class TermsNoticeScreen extends GuiScreen {
+public final class TermsNoticeScreen extends GuiScreen implements Notice.Screen {
 
     private static final int YES = 0;
     private static final int NO = 1;
